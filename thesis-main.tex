@@ -8,7 +8,7 @@
 
 \school{\unibo}
 \programme{Corso di Laurea Magistrale in Ingegneria e Scienze Informatiche}
-\title{Fairlib  title}
+\title{FairLib: A Modular Toolkit for Bias Analysis and Mitigation in AI Systems}
 \author{Valerio Di Zio}
 \date{\today}
 \subject{Intelligent Systems Engineering}
@@ -146,7 +146,7 @@ corresponding limitation identified above:
 
 
 \chapter{Background}
-\section{Introduction to AI Fariness}
+\section{Introduction to AI Fairness}
 The use of machine learning algorithms has permeated every aspect of our lives: from movie recommendations to hiring decisions and even to high-stakes areas such as loan approvals or risk assessments in the judicial system. Although these systems offer significant advantages—such as processing vast amounts of information without fatigue—they are also susceptible to biases that can lead to unfair decisions. As machine learning systems continue to be deployed in increasingly sensitive domains, ensuring fairness becomes a critical concern for developers, policymakers, and society at large \cite{mehrabi2021survey}.
 
 The concept of fairness in AI is multifaceted and involves technical, legal, and ethical considerations. While technical solutions can address some aspects of bias, a comprehensive approach requires understanding the social contexts in which these systems operate and the historical inequalities they might perpetuate or amplify. This report provides an overview of fairness in AI, including its definitions, origins of bias, mitigation strategies, and applications across various domains.
@@ -188,7 +188,7 @@ Bias in AI can stem from multiple sources, each requiring different approaches f
     
     \item \textbf{Bias in the Algorithms:} Even with unbiased data, design choices—such as optimization functions, regularization techniques, or modeling assumptions—can introduce unfairness. For instance, prioritizing overall accuracy might lead to models that perform well on majority groups but poorly on minorities \cite{10749873}.
     
-    \item \textbf{Bias in Evaluation:} If we evaluate models using metrics that don't account for fairness considerations, we might deploy systems that appear successful but discriminate in practice.
+    \item \textbf{Bias in Evaluation:} If we evaluate models using metrics that do not account for fairness considerations, we might deploy systems that appear successful but discriminate in practice.
     
 \end{itemize}
 
@@ -518,7 +518,43 @@ Further hurdles arise from API and documentation design: inconsistent terminolog
 \section{Current Challenges in Operationalizing Fairness}
 In operationalizing algorithmic fairness, practitioners face multiple interrelated challenges. \textbf{First}, numerous formal definitions of fairness exist (e.g., demographic parity, equalized odds), and many of these criteria conflict or cannot be satisfied simultaneously \cite{kusner2017counterfactual,xian2024unified}. This forces stakeholders to decide which definition best aligns with their context and values. \textbf{Second}, pursuing fairness often involves trade-offs with model accuracy or other performance measures, since fairness constraints can degrade predictive accuracy \cite{corbettdavies2017}. \textbf{Third}, bias in data presents a major obstacle: historical datasets may reflect societal prejudices, and models can inadvertently use proxy features correlated with protected attributes, leading to residual unfairness even after interventions \cite{barocas2016}. \textbf{Fourth}, fairness solutions must be tailored to each domain’s legal and social context; for example, anti-discrimination laws in some sectors restrict the use of sensitive attributes and mandate specific fairness criteria, necessitating domain-specific approaches \cite{veale2017}. \textbf{Finally}, even when technical solutions are available, deploying them in real-world systems is difficult. Open-source fairness toolkits (e.g., AI Fairness 360 \cite{bellamy2019aif360}) provide many metrics and mitigation algorithms, but practitioners often struggle with their usability and integration into existing workflows \cite{holstein2019,lee2021}. These challenges highlight that achieving fairness in practice requires not only better algorithms, but also careful attention to context, data quality, and human-centered tool design.
 
+\chapter{FairLib: Toolkit for Bias Analysis and Mitigation}
 
+FairLib is designed as a comprehensive, modular Python package for analyzing and mitigating bias in machine learning models, providing both theoretical foundations and practical tools for fairness-aware machine learning.
+
+\section{Core Architecture}
+
+The library follows a layered architectural pattern with clear separation of concerns, enabling flexible composition of fairness techniques while maintaining consistency across different algorithmic approaches. The architecture is built around five core components that work synergistically to provide a complete fairness-aware machine learning ecosystem.
+
+\subsection{Enhanced Data Foundation Layer}
+
+At the foundation lies the \textbf{FairLib DataFrame}, an extension of Pandas DataFrame that serves as the primary data container with native fairness awareness. This enhanced data structure provides explicit declaration and validation of protected attributes with automatic consistency checking, ensuring that sensitive information is properly tracked throughout the data processing pipeline. The DataFrame maintains centralized management of prediction targets with support for multi-target scenarios, allowing researchers to work with complex prediction tasks while preserving fairness metadata.
+
+The FairLib DataFrame provides native support for calculating fairness metrics directly on the dataset without requiring external dependencies, streamlining the evaluation workflow.
+
+\subsection{Unified Metrics Framework}
+
+The metrics layer provides a comprehensive framework for standardized evaluation of algorithmic fairness. This framework implements individual fairness metrics including Statistical Parity Difference (SPD), Disparate Impact (DI), and Equality of Opportunity (EOO), each designed to capture different aspects of algorithmic bias. The framework maintains a consistent interface across all metrics, enabling seamless metric switching and comparison without requiring code restructuring.
+
+The metrics system supports flexible output formats, providing both numerical results for automated analysis and detailed breakdowns by sensitive attribute groups for interpretability. These metrics are designed for dual use as standalone evaluation tools and as integrated components within algorithmic frameworks, particularly for in-processing techniques that incorporate fairness constraints directly into the optimization process.
+
+\subsection{Bias Mitigation Processing Layer}
+
+The processing layer encompasses two complementary paradigms for bias mitigation, each following consistent interface patterns that facilitate interoperability and ease of use.
+
+The \textbf{pre-processing module} focuses on data transformation algorithms that remove bias before model training begins. This module implements a common \texttt{Preprocessor} base class with standardized \texttt{fit\_transform} methodology, ensuring consistent behavior across different algorithms. The module includes Learning Fair Representations (LFR), Disparate Impact Remover, and Reweighing algorithms, each addressing different aspects of data bias. These algorithms maintain data integrity while ensuring fairness properties in the transformed datasets, allowing practitioners to address bias at the data level before any model training occurs.
+
+The \textbf{in-processing module} provides model training algorithms that incorporate fairness constraints during the learning process itself. This module implements a unified \texttt{Processor} interface with consistent \texttt{fit} and \texttt{predict} methods, mirroring familiar machine learning patterns. The module includes Fairness Under Constrained Injection (FaUCI), Adversarial Debiasing, and Prejudice Remover algorithms, each offering different approaches to integrating fairness objectives into the optimization process. These algorithms seamlessly blend fairness considerations with predictive performance, enabling practitioners to find optimal trade-offs between accuracy and fairness.
+
+\subsection{Framework Integration Layer}
+
+The integration layer provides native support for popular machine learning ecosystems, ensuring that FairLib can be adopted within existing workflows without requiring fundamental architectural changes. PyTorch integration allows deep learning models to be wrapped and enhanced with fairness capabilities while preserving their original interfaces, enabling researchers to apply fairness techniques to complex neural architectures. Scikit-learn compatibility ensures that standard fit/predict/transform patterns enable drop-in replacement within existing ML pipelines, reducing the barrier to adoption.
+
+\subsection{Consistency and Interoperability}
+
+Cross-cutting architectural principles ensure system coherence across all components. The architecture enforces uniform interface patterns where all algorithms follow consistent method signatures and parameter conventions, reducing the learning curve for practitioners working with multiple techniques. Metadata preservation ensures that fairness-relevant information, including sensitive attributes and target specifications, is automatically maintained across all operations, preventing the loss of critical information during complex processing pipelines.
+
+This architectural design enables users to seamlessly transition between different fairness approaches, combine multiple techniques, and integrate fairness considerations into existing machine learning workflows without requiring fundamental changes to their development practices.
 
 
 
