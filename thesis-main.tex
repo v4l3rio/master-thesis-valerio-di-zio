@@ -7,16 +7,16 @@
 \usepackage{acronym}
 
 \school{\unibo}
-\programme{Corso di Laurea [Magistrale?] in Ingegneria e Scienze Informatiche}
-\title{Fancy Title}
-\author{Candidate Name}
+\programme{Corso di Laurea Magistrale in Ingegneria e Scienze Informatiche}
+\title{Fairlib  title}
+\author{Valerio Di Zio}
 \date{\today}
-\subject{Supervisor's course name}
-\supervisor{Prof. Supervisor Here}
-\cosupervisor{Dott. CoSupervisor 1}
-\morecosupervisor{Dott. CoSupervisor 2}
+\subject{Intelligent Systems Engineering}
+\supervisor{Prof. Giovanni Ciatto}
+\cosupervisor{Prof. Andrea Omicini}
+\morecosupervisor{Prof.ssa Roberta Calegari}
 \session{I}
-\academicyear{2022-2023}
+\academicyear{2024-2025}
 
 % Definition of acronyms
 \acrodef{IoT}{Internet of Thing}
@@ -30,17 +30,23 @@
 \frontmatter\frontispiece
 
 \begin{abstract}	
-Max 2000 characters, strict.
+Automated decision-making systems are rapidly permeating socially sensitive domains such as finance, healthcare, justice, and autonomous mobility.  While these data-driven solutions can increase efficiency, they can also perpetuate or amplify existing inequities whenever the underlying algorithms exhibit unfair behaviour.  This thesis provides a systematic investigation of algorithmic fairness, clarifying the multiple, often competing, formal definitions of fairness adopted in the literature and mapping them to the practical risks of bias and discrimination that arise throughout the machine-learning pipeline.
+
+After surveying the principal sources of bias—data imbalance, historical prejudice, model opacity, and feedback loops—the work reviews state-of-the-art mitigation strategies grouped into three families: pre-processing (data-repair and re-sampling techniques), in-processing (fairness-aware losses, constraints, and regularisers), and post-processing (prediction-adjustment and explanation tools).  Building upon these foundations, the thesis introduces FairLib: a modular, open-source library that unifies bias-diagnosis metrics, visual analytics, and mitigation algorithms behind a consistent API.  FairLib is designed to be model-agnostic, seamlessly integrating with popular ML frameworks, and to facilitate reproducible experimentation through configurable pipelines.
+
+A preliminary evaluation on the canonical Adult income dataset indicates that selected FairLib pipelines can measurably reduce unfairness while leaving overall predictive accuracy broadly unchanged. Although limited to one benchmark and modest in scope, these findings suggest that systematic fairness interventions are achievable without prohibitive performance trade-offs.
+
+By coupling a critical analysis of fairness concepts with a practical, extensible toolkit, this thesis aims to foster greater transparency and accountability in artificial-intelligence systems and to assist practitioners in deploying models that respect fundamental principles of equity.
 \end{abstract}
 
 \begin{dedication} % this is optional
-Optional. Max a few lines.
+A tutte le persone che hanno reso questi anni magici e indimenticabili.
 \end{dedication}
 
 %----------------------------------------------------------------------------------------
 \tableofcontents   
-\listoffigures     % (optional) comment if empty
-\lstlistoflistings % (optional) comment if empty
+% \listoffigures     % (optional) comment if empty
+% \lstlistoflistings % (optional) comment if empty
 %----------------------------------------------------------------------------------------
 
 \mainmatter
@@ -48,48 +54,478 @@ Optional. Max a few lines.
 %----------------------------------------------------------------------------------------
 \chapter{Introduction}
 \label{chap:introduction}
-%----------------------------------------------------------------------------------------
+Artificial-intelligence (AI) systems increasingly mediate decisions about
+credit, employment, healthcare, justice, and mobility.  Their scale and
+opacity mean that even small statistical biases can translate into
+systematic, large-scale harm.  The goal of \emph{algorithmic fairness} is
+therefore to ensure that automated decisions do not introduce—nor
+amplify—unjustified discrimination against protected groups
+\cite{mehrabi2021survey}.  Achieving that goal, however, remains
+challenging because unfairness can emerge at many points in the
+machine-learning (ML) pipeline, from data collection to model
+deployment, and because technical, legal, and ethical notions of
+“fair” often conflict in practice \cite{suresh2021framework}.
 
-Write your intro here.
-\sidenote{Add sidenotes in this way. They are named after the author of the thesis}
+\section{From Bias to Mitigation: Scope of This Report}
+\begin{enumerate}
+  \item \textbf{Diagnose the problem:}  
+  We survey the landscape of algorithmic unfairness, definitions of
+  fairness, sources of bias (representation, measurement, aggregation,
+  and historical), and the feedback loops that can entrench disparities.
+  We also review state-of-the-art mitigation strategies that operate at
+  three key stages of the ML lifecycle:
+  \emph{pre-processing} (data repair and re-weighting),
+  \emph{in-processing} (fairness-constrained learning), and
+  \emph{post-processing} (output adjustment).
 
-You can use acronyms that your defined previously,
-such as \ac{IoT}.
-%
-If you use acronyms twice,
-they will be written in full only once
-(indeed, you can mention the \ac{IoT} now without it being fully explained).
-%
-In some cases, you may need a plural form of the acronym.
-%
-For instance,
-that you are discussing \acp{vm},
-you may need both \ac{vm} and \acp{vm}.
+  \item \textbf{Offer a practical solution:}  
+In this study we present \textbf{FairLib}, a modular Python library that consolidates a broad spectrum of fairness metrics and bias-mitigation algorithms within a single, production-oriented interface. By elevating bias detection, remediation, and continuous auditing to integral components of the machine-learning development lifecycle, FairLib significantly reduces the practical barriers to deploying equitable intelligent systems.
+\end{enumerate}
+\section{Why Another Library?  Limitations of the Status Quo}
+Although IBM’s \textit{AI Fairness 360} (AIF360) \cite{bellamy2019aif360} and Microsoft’s
+\textit{Fairlearn} \cite{bird2020fairlearn} have stimulated important research,
+they remain ill-suited for day-to-day engineering because they exhibit four
+persistent shortcomings:
 
-\paragraph{Structure of the Thesis}
+\begin{itemize}
+  \item \textbf{Fragmented APIs and terminology:}  
+  Conceptually identical operations are exposed through incompatible
+  class names, argument conventions, and data structures, forcing practitioners
+  to maintain fragile “glue code” whenever they switch between metrics or
+  mitigation algorithms.
 
-\note{At the end, describe the structure of the paper}
+  \item \textbf{Verbosity and operational complexity:}  
+  Even elementary tasks—such as computing a single fairness metric or launching
+  a standard debiasing pass—require boiler-plate scripts and nested wrapper
+  objects, raising the learning curve and discouraging rapid experimentation.
 
-\chapter{State of the art}
+  \item \textbf{Binary-only focus:}
+  Most built-in metrics and mitigation routines assume \emph{binary} sensitive
+  attributes and \emph{binary} classification targets; multi-class settings are
+  either unsupported or require significant user re-implementation.
 
-I suggest referencing stuff as follows: \cref{fig:random-image} or \Cref{fig:random-image}
+  \item \textbf{Integration barriers and rigid internal models:}  
+  Neither toolkit plugs cleanly into existing \textit{PyTorch} or
+  \textit{scikit-learn} pipelines: mitigation methods are hard-wired to
+  internally defined estimators that can be adjusted only through superficial
+  hyper-parameters.  A practitioner cannot, for example, inject a
+  domain-specific neural network as the base learner for a fairness algorithm
+  without rewriting large portions of the codebase.
+\end{itemize}
+\section{FairLib Objectives}
+\textbf{FairLib} is explicitly engineered so that each objective eliminates a
+corresponding limitation identified above:
 
-\begin{figure}
-    \centering
-    \includegraphics[width=.8\linewidth]{figures/random-image.pdf}
-    \caption{Some random image}
-    \label{fig:random-image}
-\end{figure}
+\begin{itemize}
+  \item \textbf{Unifying fragmented APIs:}  
+  A coherent, scikit-learn–style interface
+  (\texttt{fit}, \texttt{transform}, \texttt{predict}) and consistent terminology
+  replace the incompatible conventions that plague existing libraries,
+  removing the need for brittle integration code.
 
-\section{Some cool topic}
+  \item \textbf{Reducing verbosity and complexity:}  
+  Group- and individual-level metrics share a vectorised NumPy core, so
+  computing a metric or launching a debiasing routine becomes a one-liner,
+  dramatically accelerating prototyping.
 
-\chapter{Contribution}
+  \item \textbf{Extending beyond binary settings:}  
+  All fairness metrics and evaluation utilities natively support multi-class targets and both binary and categorical sensitive attributes, while debiasing algorithms offer varying levels of support for multi-class settings together addressing key gaps in existing fairness libraries.
 
-You may also put some code snippet (which is NOT float by default), eg: \cref{lst:random-code}.
+  \item \textbf{Providing end-to-end debiasing:}  
+  Harmonised \emph{pre-} and \emph{in-processing} modules (with
+  post-processing on the roadmap) let practitioners inject fairness at the
+  point most compatible with data-governance and privacy constraints.
 
-\lstinputlisting[float,language=Java,label={lst:random-code}]{listings/HelloWorld.java}
+  \item \textbf{Enabling customisable trade-offs and models:}  
+  Every mitigation algorithm surfaces its fairness penalty as an hyperparameter and accepts a user-supplied estimator, which can range from linear models to bespoke neural networks, thereby supporting automatic exploration of the fairness–utility frontier without sacrificing architectural flexibility.
 
-\section{Fancy formulas here}
+  \item \textbf{Ensuring seamless workflow integration:}  
+  Native PyTorch wrappers and drop-in scikit-learn compatibility allow FairLib components to slot directly into production notebooks, model registries, and CI/CD pipelines, overcoming the rigid, “model-locked” designs of prior toolkits.
+\end{itemize}
+
+
+
+\chapter{Background}
+\section{Introduction to AI Fariness}
+The use of machine learning algorithms has permeated every aspect of our lives: from movie recommendations to hiring decisions and even to high-stakes areas such as loan approvals or risk assessments in the judicial system. Although these systems offer significant advantages—such as processing vast amounts of information without fatigue—they are also susceptible to biases that can lead to unfair decisions. As machine learning systems continue to be deployed in increasingly sensitive domains, ensuring fairness becomes a critical concern for developers, policymakers, and society at large \cite{mehrabi2021survey}.
+
+The concept of fairness in AI is multifaceted and involves technical, legal, and ethical considerations. While technical solutions can address some aspects of bias, a comprehensive approach requires understanding the social contexts in which these systems operate and the historical inequalities they might perpetuate or amplify. This report provides an overview of fairness in AI, including its definitions, origins of bias, mitigation strategies, and applications across various domains.
+
+\subsection{What is Fairness?}
+Fairness refers to the principle that every individual or group should be treated justly and impartially. In decision-making, this means that processes, whether human or automated, should not introduce unjustified discrimination based on inherent or acquired characteristics such as gender, ethnicity, or socioeconomic status \cite{smuha2021}.
+
+The notion of fairness is deeply rooted in philosophical and legal traditions, with concepts such as distributive justice, procedural fairness, and equal opportunity providing frameworks for understanding what constitutes fair treatment \cite{kuppler2021distributivejusticefairnessmetrics}. In the context of automated decision systems, fairness extends these principles to ensure that algorithms do not perpetuate or amplify existing social biases \cite{algorithmBono2021}.
+
+For example, in a recruitment system, fairness requires that candidates be evaluated solely on their skills and qualifications, free from biases related to gender or ethnicity \cite{Chen2023}. Similarly, in credit scoring, a fair system would assess creditworthiness based on relevant financial factors rather than characteristics protected by anti-discrimination laws \cite{algorithmicdiscrimination2024}.
+
+It's worth noting that fairness is context-dependent, and what constitutes fair treatment may vary across different domains and cultures. Nevertheless, certain fundamental principles, such as non-discrimination and equal treatment of similar cases, remain consistent across contexts \cite{kuppler2021distributivejusticefairnessmetrics}.
+
+\subsection{The Importance of Fairness in AI Systems}
+Ensuring fairness in artificial intelligence is crucial, especially when these systems make decisions that directly affect people's lives \cite{corbett2023measure, yuan2024ensuringfairnesstransparentauditing}. Unfair AI systems can perpetuate and even exacerbate existing social inequalities, affecting individuals' access to opportunities, resources, and services.
+
+A canonical example is the COMPAS system, used in U.S. courts to assess the risk of recidivism. Studies have shown that COMPAS tends to produce higher false-positive rates for African-American defendants compared to Caucasian defendants under similar conditions. This means that Black defendants were more likely to be incorrectly labeled as high-risk, potentially leading to harsher sentencing or denial of parole \cite{yuan2024ensuringfairnesstransparentauditing}.
+
+Beyond the justice system, fairness concerns arise in numerous domains:
+
+\begin{itemize}
+    \item \textbf{Employment:} Resume screening algorithms 
+    might inadvertently favor candidates from certain demographic 
+    groups or educational backgrounds \cite{kheya2024pursuitfairnessartificialintelligence}.
+    \item \textbf{Healthcare:} Diagnostic tools calibrated on data from predominantly one demographic group may be less accurate for others\cite{10749873}.
+    \item \textbf{Financial Services:} Credit scoring algorithms might systematically disadvantage certain communities, reinforcing historical patterns of exclusion \cite{Ferrara2023}.
+    \item \textbf{Education:} Automated evaluation systems might penalize students whose learning styles or language patterns differ from the norm \cite{kheya2024pursuitfairnessartificialintelligence}.
+\end{itemize}
+
+The consequences of unfair AI systems extend beyond individual harms to societal impacts. When automated systems systematically disadvantage certain groups, they can erode trust in technology, reinforce stereotypes, and contribute to social polarization. Instead, fair AI systems have the potential to promote inclusiveness, reduce discrimination and create more equitable outcomes \cite{Ferrara2023}.
+
+\subsection{Origins of Bias and the Feedback Loop}
+Bias in AI can stem from multiple sources, each requiring different approaches for mitigation:
+
+\begin{itemize}
+    \item \textbf{Bias in the Data:} If the training data is skewed or unrepresentative of the true population, the algorithm will learn and reproduce these biases, sometimes even amplifying them. For instance, facial recognition systems trained predominantly on light-skinned faces perform worse on darker-skinned individuals \cite{buolamwini2018gender}.
+    
+    \item \textbf{Bias in the Problem Formulation:} How we define the problem and choose variables can introduce bias. For example, using proxies like ZIP codes instead of more direct measures can inadvertently incorporate demographic biases if neighborhoods are segregated.
+    
+    \item \textbf{Bias in the Algorithms:} Even with unbiased data, design choices—such as optimization functions, regularization techniques, or modeling assumptions—can introduce unfairness. For instance, prioritizing overall accuracy might lead to models that perform well on majority groups but poorly on minorities \cite{10749873}.
+    
+    \item \textbf{Bias in Evaluation:} If we evaluate models using metrics that don't account for fairness considerations, we might deploy systems that appear successful but discriminate in practice.
+    
+\end{itemize}
+
+A particularly concerning phenomenon is the \textbf{feedback loop}, where biased predictions influence future data collection, which in turn reinforces the original bias \cite{ensign2018runaway}. For instance, predictive policing algorithms might direct more officers to neighborhoods already experiencing higher policing, leading to more arrests, which then reinforce the prediction that these areas have higher crime rates. This creates a self-fulfilling prophecy that can entrench and amplify existing disparities.
+
+Historical biases present in society can also manifest in AI systems through the data they're trained on. Language models trained on internet text may inherit sexist or racist associations present in their training corpus. Word embeddings trained on standard text corpora reflect gender and racial stereotypes present in society \cite{caliskan2017semantics}.
+
+\subsection{Types of Bias and Sources of Discrimination}
+Understanding the various types of bias that can affect AI systems is essential for developing effective mitigation strategies. A number of frameworks have been proposed to categorize these biases, including those affecting data, model design, and deployment contexts \cite{mehrabi2021survey,suresh2021framework}.
+\begin{itemize}
+\item \textbf{Representation Bias} arises when the dataset does not adequately reflect the diversity of the population. For instance, Buolamwini and Gebru found that commercial facial recognition systems perform worst on darker-skinned women, illustrating severe underrepresentation in benchmark datasets \cite{buolamwini2018gender, suresh2021framework}.
+
+\item \textbf{Measurement Bias} occurs when proxies are used in place of direct measurements. For example, arrest records used in predictive policing introduce racial disparities due to historically biased law enforcement practices \cite{ensign2018runaway, suresh2021framework}.
+
+\item \textbf{Aggregation Bias}, \textbf{Evaluation Bias}, \textbf{User Interaction Bias}, and \textbf{Temporal Bias} are discussed as distinct sources of harm that emerge when models are designed, validated, or deployed without accounting for subgroup-specific differences or time-based shifts. These were formally characterized in lifecycle frameworks proposed by Suresh and Guttag \cite{suresh2021framework}.
+
+\item \textbf{Historical Bias} reflects the reproduction of long-standing social inequalities. Language models, for instance, have been shown to encode and replicate gender and racial stereotypes learned from text corpora \cite{caliskan2017semantics}.
+
+\item \textbf{Algorithmic Bias} stems from model design decisions, including feature selection, optimization objectives, or regularization strategies, which may produce disparate outcomes even when the training data is balanced \cite{mehrabi2021survey}.
+
+\end{itemize}
+Discrimination in AI can be \textbf{direct}, involving explicit use of protected attributes, or \textbf{indirect}, where neutral criteria disproportionately impact certain groups. These forms can be explainable, meaning they can be justified by relevant non-protected attributes, or unexplainable, which is considered unfair or illegal. Frameworks for quantifying and mitigating such discrimination have been proposed to distinguish between the two \cite{kamiran2013quantifying,corbett2023measure}.
+
+Understanding these distinctions is crucial for ethical and legal assessments of AI. While certain disparities may reflect legitimate factors (e.g., qualifications), others are manifestations of unjustified bias that require targeted safeguards in both design and deployment phases.
+
+\subsection{Definitions of Fairness}
+One of the central challenges in developing fair AI systems is that there is no single, universally agreed-upon definition of fairness. Different notions of fairness capture different intuitions and may be more appropriate in different contexts \cite{verma2018fairness} \cite{mitchell2021algorithmic}.
+
+Some of the most commonly used formal definitions include:
+
+\begin{itemize}
+    \item \textbf{Demographic Parity:} Requires that the probability of a positive outcome is the same across all groups, regardless of protected attributes. Mathematically, for a decision $\hat{Y}$ and a protected attribute $A$:
+    \[ P(\hat{Y} = 1 | A = a) = P(\hat{Y} = 1 | A = b) \text{ for all values } a, b \text{ of } A \]
+    This definition aims for equal representation but may not be appropriate when the base rates genuinely differ across groups.
+    
+    \item \textbf{Equalized Odds:} Demands that, conditioned on the true outcome, both true positive and false positive rates are equal across groups \cite{hardt2016equalityopportunitysupervisedlearning}:
+    \[ \begin{aligned}
+    P(\hat{Y} = 1 | Y = y, A = a) &= P(\hat{Y} = 1 | Y = y, A = b) \\
+    &\text{ for } y \in \{0, 1\} \text{ and all values } a, b \text{ of } A
+    \end{aligned} \]
+    This ensures that the algorithm's errors are distributed fairly across groups.
+    
+    \item \textbf{Equal Opportunity:} A relaxation of equalized odds that focuses solely on ensuring that individuals who truly belong to the positive class have an equal chance of being correctly classified:
+    \[ P(\hat{Y} = 1 | Y = 1, A = a) = P(\hat{Y} = 1 | Y = 1, A = b) \text{ for all values } a, b \text{ of } A \]
+    This is particularly relevant in contexts like hiring, where we want qualified candidates to have equal chances regardless of their demographic group.
+    
+    \item \textbf{Predictive Parity:} Requires that the precision of the classifier is the same across all groups:
+    \[ P(Y = 1 | \hat{Y} = 1, A = a) = P(Y = 1 | \hat{Y} = 1, A = b) \text{ for all values } a, b \text{ of } A \]
+    This ensures that a positive prediction has the same meaning regardless of group membership.
+\end{itemize}
+
+Importantly, these definitions can conflict with each other \cite{kusner2017counterfactual}. This creates inherent trade-offs that must be navigated based on the specific context and ethical priorities.
+
+The choice of fairness definition should be guided by the specific application domain, the nature of the task, the potential harms of different types of errors, and the ethical values being prioritized. For instance, in medical diagnosis, we might prioritize equality of false negative rates to ensure that serious conditions aren't missed for any group, while in criminal justice, we might prioritize equality of false positive rates to avoid wrongful punishment.
+
+\subsection{Trade-offs Between Fairness and Other Objectives}
+An important consideration in implementing fair AI systems is the potential trade-off between fairness and other objectives such as accuracy, efficiency, or interpretability.
+
+The most widely discussed trade-off is between fairness and accuracy. Imposing fairness constraints typically reduces a model's overall predictive performance, as measured by conventional metrics like accuracy or F1 score. This creates a Pareto frontier where improvements in fairness come at the cost of reduced accuracy, and vice versa. The extent of this trade-off varies depending on the specific fairness definition, the dataset characteristics, and the learning algorithm used.
+
+Beyond accuracy, fairness may also trade off against:
+
+\begin{itemize}
+    \item \textbf{Interpretability:} More complex models that incorporate fairness constraints may be harder to interpret, reducing transparency and making it difficult to identify sources of bias;
+    
+    \item \textbf{Computational Efficiency:} Many fairness-aware algorithms require additional computational resources for training and inference, potentially limiting their applicability in resource-constrained environments;
+    
+    \item \textbf{Privacy:} Ensuring fairness often requires collecting and analyzing sensitive demographic data, which may conflict with privacy objectives or regulations like GDPR;
+    
+    \item \textbf{Individual Utility:} Group fairness measures may sometimes reduce utility for specific individuals who would have received positive outcomes under an unfair but more accurate model;
+    
+    \item \textbf{Short-term vs. Long-term Fairness:} Interventions that promote fairness in the short term may have unintended consequences that reduce fairness in the long term, or vice versa.
+\end{itemize}
+
+Achieving fairness in AI systems isn’t just a technical challenge — it involves making value-based decisions about which goals matter most in a given context. These decisions should include input from people with different backgrounds, especially those who might be affected by the system, and should be guided by ethical principles, legal standards, and domain-specific knowledge.
+
+It’s also important to remember that these trade-offs aren’t fixed. They depend on things like data quality, model complexity, and how the problem is defined. Better data collection, more advanced algorithms, and clearer definitions of fairness can help ease — though not completely solve — these tensions \cite{kusner2017counterfactual, chouldechova2020snapshot}.
+
+\section{Methods for Mitigating Bias}
+Researchers have developed numerous approaches to address bias in AI systems, which can be categorized based on the stage of the machine learning pipeline where they're applied:
+
+
+\subsection{Pre-processing techniques}
+These methods focus on transforming the input data to remove discriminatory patterns before model training. Examples include:
+\begin{itemize}
+    \item Reweighting or resampling data to balance representation across groups;
+    \item Transforming features to remove correlations with protected attributes \cite{kamiran2013quantifying};
+    \item Learning fair representations that preserve task-relevant information 
+    while obscuring protected attributes \cite{mehrabi2021survey};
+    \item Data augmentation to generate synthetic samples for underrepresented groups \cite{mehrabi2021survey}.
+\end{itemize}
+    
+
+\subsection{In-processing techniques} 
+These approaches incorporate fairness considerations directly into the learning algorithm, often by modifying the objective function or adding constraints. Examples include:
+\begin{itemize}
+    \item Adversarial debiasing, which uses an adversarial approach to remove information about protected attributes from the learned representations \cite{mehrabi2021survey};
+    \item Fair classification with constraints, which explicitly incorporates fairness criteria as constraints in the optimization problem \cite{corbett2023measure};
+    \item Fair reinforcement learning, which modifies reward functions to account for fairness considerations \cite{mehrabi2021survey}.
+\end{itemize}
+    
+
+\subsection{Post-processing techniques} 
+These methods adjust the output of already trained models to ensure fairness. Examples include:
+\begin{itemize}
+    \item Threshold optimization, which applies different decision thresholds for different groups to equalize error rates;
+    \item Calibration techniques that ensure predictions have the same meaning across groups;
+    \item Reject option classification, which identifies and manually handles cases in the critical region between positive and negative classifications \cite{kamiran2013quantifying}.
+\end{itemize}
+
+\subsection{Comparative Analysis of Mitigation Approaches}
+
+Each of these methods presents trade-offs. \textbf{Pre-processing} techniques offer flexibility and compatibility with any model but may not fully eliminate bias. \textbf{In-processing} techniques often yield better fairness-accuracy trade-offs but require access to model internals. \textbf{Post-processing} techniques are typically easier to implement but can be less robust \cite{mehrabi2021survey,suresh2021framework}.
+
+The choice of mitigation strategy should be guided by practical considerations such as:
+
+\begin{itemize}
+    \item Access to protected attributes during training and deployment;
+    \item Computational resources available;
+    \item Regulatory requirements regarding the use of protected attributes;
+    \item The specific fairness definition being targeted.
+\end{itemize}
+
+Importantly, bias mitigation is not a one-time fix. Effective fairness in AI requires ongoing auditing, evaluation, and adjustment as societal values, population characteristics, and contexts evolve \cite{suresh2021framework}.
+
+Recent work emphasizes the importance of domain-specific fairness frameworks. For instance, fairness in healthcare may prioritize equitable health outcomes over statistical parity, whereas fairness in education or finance may involve different risk-benefit trade-offs \cite{mehrabi2021survey}.
+
+
+\section{Fairness in Different Application Domains}
+The implementation of fairness principles varies significantly across different domains, reflecting the diverse nature of AI applications:
+
+\begin{itemize}
+    \item\textbf{Criminal Justice:} Beyond the COMPAS example, many risk assessment tools are used to make decisions about bail, sentencing, and parole. Fairness is especially important here because these decisions have serious consequences for people’s lives and happen within a system that has a history of discrimination. Research shows that even factors that seem neutral, like past arrests, can reflect racial bias caused by unequal policing \cite{berk2017fairness, ensign2018runaway}. Fairness in this area means finding the right balance between keeping the public safe and protecting individual rights, while also being careful not to repeat injustices from the past.
+    
+    \item \textbf{Healthcare:} AI is playing a growing role in healthcare, from diagnosing illnesses to suggesting treatments and managing how resources are distributed. One study \cite{obermeyer2019dissecting} found that a commonly used algorithm gave lower risk scores to Black patients than to White patients with similar health conditions, which led to fewer referrals for extra care. Ensuring fairness in healthcare requires more than just accounting for demographics — it also means recognizing variations in how diseases appear, how different groups respond to treatment, and the unequal access to medical services.
+    
+    \item \textbf{Finance:} Credit scoring, loan approval, insurance pricing, and other financial algorithms can significantly impact individual economic opportunities. Studies have found evidence of disparate impacts in mortgage lending, with certain demographic groups receiving higher interest rates or being denied loans more frequently, even after controlling for relevant financial factors \cite{bartlett2022consumer}. Fairness in financial contexts must balance risk assessment with ensuring equal access to financial services and preventing the perpetuation of historical economic disparities.
+    
+    \item \textbf{Education:} AI systems are used for admissions decisions, student assessment, personalized learning, and resource allocation in educational settings. Automated grading systems, for instance, may penalize certain writing styles or language patterns associated with particular cultural backgrounds. Fairness in education requires considering diverse learning styles, cultural contexts, and educational backgrounds while ensuring that AI systems support rather than hinder educational equity \cite{mehrabi2021survey}.
+    
+    \item \textbf{Employment:} AI-powered resume screening and hiring tools can reflect and reproduce workplace discrimination if trained on biased historical hiring data. For instance, algorithms may deprioritize resumes with minority-associated names or nontraditional educational paths \cite{Chen2023}. Fair employment AI demands careful review of what constitutes “merit” and ensures equal opportunity.
+    
+    \item \textbf{Public Services:} Government systems increasingly use AI for eligibility screening, benefits administration, and fraud detection. These services impact vulnerable populations most directly. Fairness in public services is crucial to prevent administrative exclusion or harm, and must be designed with high accountability standards \cite{suresh2021framework}.
+\end{itemize}
+
+These diverse applications highlight the need for domain-specific approaches to fairness that consider the unique ethical challenges, stakeholder perspectives, and regulatory frameworks relevant to each context. Moreover, they emphasize that technical solutions alone are insufficient—organizational practices, institutional policies, and legal frameworks must also evolve to support fair AI deployment.
+
+
+\section{Fairness Algorithms and Metrics}
+The state-of-the-art in algorithmic fairness is built upon several foundational pillars that have evolved over time. These pillars form a comprehensive framework for addressing bias in machine learning systems through a systematic approach. First, researchers have developed various metrics to identify and quantify bias, enabling precise measurement of different fairness notions across demographic groups. Second, a rich ecosystem of mitigation algorithms has emerged, categorized by their position in the machine learning pipeline: pre-processing techniques that transform training data before model development; in-processing methods that incorporate fairness directly into the learning algorithms; and post-processing approaches that adjust model outputs to ensure fair predictions. Together, these components provide practitioners with a diverse toolkit to address fairness concerns across different contexts and applications, balancing the often competing goals of accuracy and equity. The following sections examine each of these pillars in greater detail, highlighting key approaches and their theoretical foundations.
+
+\subsection{Fairness Metrics}
+Fairness metrics are essential for quantifying bias in machine learning models. They provide a means to evaluate how well a model adheres to various fairness definitions, enabling practitioners to identify and address potential disparities. Commonly used metrics include:
+
+\subsubsection{Statistical Parity Difference (SPD)} 
+Measures whether positive prediction rates are balanced across different demographic groups. Formally:
+\begin{equation}
+    \text{SPD} = P(\hat{Y}=1 \mid A=a) - P(\hat{Y}=1 \mid A=b)
+\end{equation}
+
+A value close to 0 indicates that the model assigns positive outcomes at equal rates to both groups. SPD is useful for detecting allocative bias—whether one group is favored in outcome distribution \cite{dwork2011fairnessawareness}.
+
+\subsubsection{Disparate Impact (DI)} 
+Quantifies the ratio of positive prediction rates between different demographic groups.
+\begin{equation}
+    \text{DI} = \frac{P(\hat{Y}=1 \mid A=a)}{P(\hat{Y}=1 \mid A=b)}
+\end{equation}
+Values below 0.8 (or above 1.25) are typically seen as indicative of potential disparate impact, according to the 80\% rule. DI is widely used in legal and regulatory contexts as a clear and interpretable indicator \cite{feldman2015certifyingremovingdisparateimpact}.
+
+\subsubsection{Equal Opportunity Difference} 
+Evaluates whether true positive rates are equal across protected groups.
+\begin{equation}
+    \text{EOD} = P(\hat{Y}=1 \mid Y=1, A=a) - P(\hat{Y}=1 \mid Y=1, A=b)
+\end{equation}
+A value near 0 implies that among the individuals who should receive a positive outcome (\begin{math}
+{Y=1} \end{math}), each group is equally likely to be correctly identified. EOD is crucial for ensuring equal quality of service \cite{hardt2016equalityopportunitysupervisedlearning}.
+
+
+\subsection{Pre-processing methods} 
+A Pre-processing algorithm transform the training data to remove bias before model training. These techniques act directly on the data—by transforming features, learning new representations, or rebalancing weights—to reduce the influence of protected attributes and improve fairness regardless of the downstream model. Commonly used pre-processing methods includes:
+
+\subsubsection{Learning Fair Representations (LFR)} This technique learns a compressed data representation that is informative for prediction, reconstructs the input, and obscures group membership.
+A simplified view of the objective is:
+\begin{equation}
+    {L}_{\text{fair}} = \text{prediction loss} + \text{reconstruction loss} + \text{fairness penalty}
+\end{equation}
+
+More formally, the training minimizes a combined loss:
+\begin{equation}
+    {L}_{\text{LFR}} = \lambda_y\, \ell(\hat{y}(z), y) + \lambda_x\, \lVert x - \hat{x}(z) \rVert^2 + \lambda_a\, D(z, A)
+\end{equation}
+where:
+\begin{itemize}
+    \item \begin{math}z = f(x)\end{math} is the latent representation,
+    \item \begin{math}\hat{y}(z)\end{math} is the prediction output,
+    \item \begin{math}\hat{x}(z)\end{math} is the reconstructed input,
+    \item \begin{math}D(z, A)\end{math} penalizes statistical dependence between the representation and the protected attribute.
+\end{itemize}
+This enables training fair models on top of a transformed space where sensitive information is less present \cite{pmlr-v28-zemel13}.
+
+
+\subsubsection{Disparate Impact Remover} This method transforms features to reduce their dependency on the protected attribute.
+At a high level, the transformation pushes each feature toward a “fair” version that is equally distributed across groups:
+\begin{equation}
+    x' = (1 - \alpha) \cdot x + \alpha \cdot x_{\text{fair}}
+\end{equation}
+The formal transformation applies quantile mapping using \textbf{Cumulative Distribution Functions}:
+\begin{equation}
+    x' = (1 - \alpha)\, x + \alpha\, F^{-1}(F_{x|A}(x))
+\end{equation}
+
+where \begin{math} F_{x | A} \end{math} is the \textbf{CDF} of the feature within group A, and \begin{math}F^{-1}\end{math} is the global inverse \textbf{CDF}. The parameter \begin{math} \alpha \in [0, 1] \end{math}controls how strongly features are adjusted.
+This technique reduces disparate impact by making feature distributions more similar across groups \cite{feldman2015certifyingremovingdisparateimpact}.
+
+\subsubsection{Reweighing} Modifies the importance of each training sample based on how frequent its label-group combination is. The goal is to simulate a balanced dataset where the label distribution is independent of group membership.
+Each sample with label y and group a receives weight:
+\begin{equation}
+    w(y, a) = \frac{P(Y = y)}{P(Y = y \mid A = a)}
+\end{equation}
+This rebalancing ensures that minority or underrepresented combinations receive more influence during training, encouraging models to make fairer decisions \cite{8907b030dc7644cabfab035645f9b9da}.
+
+
+\subsection{In-processing methods} 
+An In-processing algorithm modifies the learning algorithm to incorporate fairness constraints during model training. These methods can be more effective than pre-processing, as they directly influence the model's decision-making process. Common in-processing techniques include:
+\subsubsection{FaUCI} Augments any stochastic-gradient–based learner with a generic penalised loss that can host any group-fairness metric (statistical parity difference, equalised odds, disparate impact, …) and works with binary, categorical, or continuous sensitive attributes.
+\begin{equation}
+    \min_{\boldsymbol\theta}
+    \; \mathcal{L}{\text{task}}(\boldsymbol\theta)
+    \;+\;
+    \lambda\,\Phi\bigl(\widehat{f}{\!\boldsymbol\theta},\,A\bigr),
+\end{equation}
+where
+\begin{itemize}
+    \item \begin{math}\mathcal{L}_{\text{task}}\end{math} is the ordinary prediction loss (cross-entropy, MSE, …),
+    \item A is the protected attribute,
+    \item \begin{math}\Phi\end{math} is the user-chosen fairness metric expressed as a differentiable surrogate,
+    \item \begin{math}\lambda>0\end{math} trades off accuracy and fairness.
+\end{itemize}
+Because \begin{math}\Phi\end{math} is a plug-in term, the same implementation can enforce several metrics simply by swapping \begin{math}\Phi\end{math} \cite{fauci-aequitas2024}.
+
+\subsubsection{Adversarial Debiasing} Train a predictor and an adversary simultaneously: the predictor tries to forecast the label Y; the adversary tries to recover the protected attribute A from the predictor’s internal representation (or logits). If the adversary fails, the representation is (approximately) independent of A.
+\begin{equation}
+    \min_{\boldsymbol\theta}\;
+    \Bigl[
+    \mathcal{L}{\text{task}}(\boldsymbol\theta)
+    \;-\;
+    \lambda
+    \max{\boldsymbol\phi}
+    \mathcal{L}_{\text{adv}}\bigl(\boldsymbol\theta,\boldsymbol\phi\bigr)
+    \Bigr],
+\end{equation}
+where
+\begin{itemize}
+    \item \begin{math}\boldsymbol\phi\end{math} are the adversary parameters;
+    \item \begin{math}\mathcal{L}{\text{adv}}\end{math} is a cross-entropy loss on predicting A.
+\end{itemize}
+At equilibrium the classifier is both accurate (small \begin{math}\mathcal{L}{\text{task}}\end{math}) and uninformative about A (large adversary loss) \cite{zhang2018mitigatingunwantedbiasesadversarial}.
+
+\subsubsection{Prejudice Remover} Make the prediction \begin{math}\widehat{Y}\end{math} statistically independent of the protected attribute by adding a mutual-information regulariser to the learner’s objective.
+\begin{equation}
+    \min_{\boldsymbol\theta}
+    \;
+    \mathcal{L}_{\text{task}}(\boldsymbol\theta)
+    \;+\;
+    \eta \, I\!\bigl(\widehat{Y};A\bigr),
+\end{equation}
+where
+\begin{itemize}
+    \item \begin{math}I(\widehat{Y};A)\end{math} is the mutual information between the model’s output and the sensitive attribute (estimated with differentiable approximations);
+    \item \begin{math}\eta\end{math} controls the strength of the fairness penalty.
+\end{itemize}
+Driving \begin{math}I(\widehat{Y};A)\end{math} toward zero removes indirect prejudice that might leak through correlated features \cite{kamishima2012prejudiceremoverregularizer}.
+\subsubsection{Meta-Fair Classifier:} Solve classification and fairness as a single constrained optimisation problem.  The user specifies (i) a target fairness metric \begin{math}C(\boldsymbol\theta)\end{math} (e.g. statistical-rate gap, false-discovery-rate ratio) and (ii) an acceptable tolerance \begin{math}\tau\end{math}.
+\textbf{Primal form.}
+\begin{equation}
+    \begin{aligned}
+    \min_{\boldsymbol\theta}\;&\mathcal{L}_{\text{task}}(\boldsymbol\theta)\\
+    \text{s.t.}\;&\;|C(\boldsymbol\theta)| \;\le\; \tau .
+    \end{aligned}
+\end{equation}
+\textbf{Lagrangian reduction.} In practice the constraint is dualised,
+\begin{equation}    
+\min_{\boldsymbol\theta}\;
+\Bigl[
+\mathcal{L}_{\text{task}}(\boldsymbol\theta)
++\lambda\,|C(\boldsymbol\theta)|
+\Bigr],
+\end{equation}
+and solved with an exponentiated-gradient meta-algorithm that adapts \begin{math} \lambda \end{math} during learning, offering provable convergence guarantees for a large family of convex surrogates \cite{celis2020classificationfairnessconstraintsmetaalgorithm}. 
+
+
+\subsection{Post-processing methods} 
+After a model has been fully trained, post-processing acts only on its outputs (scores or hard labels).
+This means you can retrofit fairness guarantees without touching the training data or the learning algorithm—very handy when you must comply with new regulations but cannot retrain.
+Below are three classic methods, each with a short plain-language description followed by the minimal mathematics that drives it.
+
+\subsubsection{Equalized Odds} Modifies predictions to equalize error rates across protected groups by applying group-specific thresholding or probabilistic flipping to model outputs. It ensures that both the \textbf{false positive rate (FPR)} and \textbf{false negative rate (FNR)} are equal across groups:
+\begin{equation}
+    \Pr(\hat{Y} = 1 \mid Y = 0, A = a) = \Pr(\hat{Y} = 1 \mid Y = 0, A = a') \quad\text{(FPR equality)}
+\end{equation}
+\begin{equation}
+    \Pr(\hat{Y} = 0 \mid Y = 1, A = a) = \Pr(\hat{Y} = 0 \mid Y = 1, A = a') \quad\text{(FNR equality)}
+\end{equation}
+This is often achieved by solving a linear program that adjusts predictions post hoc while minimising accuracy loss \cite{hardt2016equalityopportunitysupervisedlearning}.
+
+\subsubsection{Calibrated Equalized Odds} Adjusts predictions while maintaining calibration—that is, the predicted probability \begin{math}\hat{P}(Y=1|X)\end{math} must match the true frequency:
+\begin{equation}
+        \Pr(Y = 1 \mid \hat{P} = p, A = a) = p \quad\text{for all groups } a.
+\end{equation}
+It seeks a transformation of scores that retains this calibration while bringing \textbf{FPR} and \textbf{FNR} differences between groups below a small threshold \begin{math}\varepsilon\end{math}. This allows a trade-off between fairness and probabilistic interpretability of outputs \cite{NIPS2017_b8b9c74a}.
+
+\subsubsection{Reject Option Classification} Introduces a rejection option for uncertain predictions that might reflect bias. Specifically, in a band around the decision boundary (typically \begin{math} p \in [0.5 - \theta, 0.5 + \theta]) \end{math}, predictions are flipped in favour of the disadvantaged group:
+\begin{equation}
+    \widetilde{Y} =
+        \begin{cases}
+        1 & \text{if } A \text{ is disadvantaged and } |p - 0.5| \le \theta, \\
+        0 & \text{if } A \text{ is advantaged and } |p - 0.5| \le \theta, \\
+        \text{original prediction} & \text{otherwise.}
+        \end{cases}
+\end{equation}
+This improves statistical parity by reducing unfair decisions near the boundary where the model is least confident \cite{6413831}.
+
+\section{Fairness Toolkits and Libraries Overview}
+IBM’s \textit{AI Fairness 360} (AIF360) and Microsoft’s \textit{Fairlearn} are two prominent open-source toolkits designed to operationalise fairness techniques in machine learning. Both provide extensive libraries of fairness metrics and bias-mitigation algorithms: AIF360 offers several detection metrics and nine pre-, in-, and post-processing mitigations \cite{bellamy2019aif360}, whereas Fairlearn complements a dashboard for diagnostic visualisation with reduction- and post-processing-based mitigations for both classification and regression \cite{bird2020fairlearn}. Despite this breadth, recent empirical studies reveal substantial usability barriers \cite{deng2022exploring}. 
+Further hurdles arise from API and documentation design: inconsistent terminology (e.g., \texttt{CorrelationRemover} in Fairlearn versus \texttt{DisparateImpactRemover} in AIF360) and limited explanatory material oblige many users to copy code from toy examples rather than adapt algorithms systematically \cite{deng2022exploring}. Finally, the libraries’ research-centric architecture complicates integration into production pipelines, especially where access to protected attributes is constrained by privacy or compliance requirements \cite{holstein2019}. In short, while AIF360 and Fairlearn lower the entry barrier to technical fairness assessments, their current incarnations remain far from “plug-and-play.” Addressing gaps in task coverage, guidance, and workflow integration is therefore essential if such tools are to fulfil their promise in real-world machine-learning practice.
+
+\section{Current Challenges in Operationalizing Fairness}
+In operationalizing algorithmic fairness, practitioners face multiple interrelated challenges. \textbf{First}, numerous formal definitions of fairness exist (e.g., demographic parity, equalized odds), and many of these criteria conflict or cannot be satisfied simultaneously \cite{kusner2017counterfactual,xian2024unified}. This forces stakeholders to decide which definition best aligns with their context and values. \textbf{Second}, pursuing fairness often involves trade-offs with model accuracy or other performance measures, since fairness constraints can degrade predictive accuracy \cite{corbettdavies2017}. \textbf{Third}, bias in data presents a major obstacle: historical datasets may reflect societal prejudices, and models can inadvertently use proxy features correlated with protected attributes, leading to residual unfairness even after interventions \cite{barocas2016}. \textbf{Fourth}, fairness solutions must be tailored to each domain’s legal and social context; for example, anti-discrimination laws in some sectors restrict the use of sensitive attributes and mandate specific fairness criteria, necessitating domain-specific approaches \cite{veale2017}. \textbf{Finally}, even when technical solutions are available, deploying them in real-world systems is difficult. Open-source fairness toolkits (e.g., AI Fairness 360 \cite{bellamy2019aif360}) provide many metrics and mitigation algorithms, but practitioners often struggle with their usability and integration into existing workflows \cite{holstein2019,lee2021}. These challenges highlight that achieving fairness in practice requires not only better algorithms, but also careful attention to context, data quality, and human-centered tool design.
+
+
+
+
+
+
+
+
+
 
 %----------------------------------------------------------------------------------------
 % BIBLIOGRAPHY
