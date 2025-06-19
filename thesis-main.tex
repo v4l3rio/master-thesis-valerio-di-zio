@@ -534,7 +534,7 @@ The FairLib DataFrame provides native support for calculating fairness metrics d
 
 \subsection{Unified Metrics Framework}
 
-The metrics layer provides a comprehensive framework for standardized evaluation of algorithmic fairness. This framework implements individual fairness metrics including Statistical Parity Difference (SPD), Disparate Impact (DI), and Equality of Opportunity (EOO), each designed to capture different aspects of algorithmic bias. The framework maintains a consistent interface across all metrics, enabling seamless metric switching and comparison without requiring code restructuring.
+The metrics layer provides a comprehensive framework for standardized evaluation of algorithmic fairness. This framework implements individual fairness metrics including \textbf{Statistical Parity Difference (SPD)}, \textbf{Disparate Impact (DI)}, and \textbf{Equality of Opportunity (EOO)}, each designed to capture different aspects of algorithmic bias. The framework maintains a consistent interface across all metrics, enabling seamless metric switching and comparison without requiring code restructuring.
 
 The metrics system supports flexible output formats, providing both numerical results for automated analysis and detailed breakdowns by sensitive attribute groups for interpretability. These metrics are designed for dual use as standalone evaluation tools and as integrated components within algorithmic frameworks, particularly for in-processing techniques that incorporate fairness constraints directly into the optimization process.
 
@@ -542,9 +542,9 @@ The metrics system supports flexible output formats, providing both numerical re
 
 The processing layer encompasses two complementary paradigms for bias mitigation, each following consistent interface patterns that facilitate interoperability and ease of use.
 
-The \textbf{pre-processing module} focuses on data transformation algorithms that remove bias before model training begins. This module implements a common \texttt{Preprocessor} base class with standardized \texttt{fit\_transform} methodology, ensuring consistent behavior across different algorithms. The module includes Learning Fair Representations (LFR), Disparate Impact Remover, and Reweighing algorithms, each addressing different aspects of data bias. These algorithms maintain data integrity while ensuring fairness properties in the transformed datasets, allowing practitioners to address bias at the data level before any model training occurs.
+The \textbf{pre-processing module} focuses on data transformation algorithms that remove bias before model training begins. This module implements a common \texttt{Preprocessor} base class with standardized \texttt{fit}, \texttt{transform} and \texttt{fit\_transform} methodology, ensuring consistent behavior across different algorithms. The module includes Learning Fair Representations (LFR), Disparate Impact Remover, and Reweighing algorithms, each addressing different aspects of data bias. These algorithms maintain data integrity while ensuring fairness properties in the transformed datasets, allowing practitioners to address bias at the data level before any model training occurs.
 
-The \textbf{in-processing module} provides model training algorithms that incorporate fairness constraints during the learning process itself. This module implements a unified \texttt{Processor} interface with consistent \texttt{fit} and \texttt{predict} methods, mirroring familiar machine learning patterns. The module includes Fairness Under Constrained Injection (FaUCI), Adversarial Debiasing, and Prejudice Remover algorithms, each offering different approaches to integrating fairness objectives into the optimization process. These algorithms seamlessly blend fairness considerations with predictive performance, enabling practitioners to find optimal trade-offs between accuracy and fairness.
+The \textbf{in-processing module} provides model training algorithms that incorporate fairness constraints during the learning process itself. This module implements a unified \texttt{Processor} interface with consistent \texttt{fit} and \texttt{predict} methods, mirroring familiar machine learning patterns. The module includes \textbf{Fairness Under Constrained Injection (FaUCI)}, \textbf{Adversarial Debiasing}, and \textbf{Prejudice Remover} algorithms, each offering different approaches to integrating fairness objectives into the optimization process. These algorithms seamlessly blend fairness considerations with predictive performance, enabling practitioners to find optimal trade-offs between accuracy and fairness.
 
 \subsection{Framework Integration Layer}
 
@@ -556,8 +556,22 @@ Cross-cutting architectural principles ensure system coherence across all compon
 
 This architectural design enables users to seamlessly transition between different fairness approaches, combine multiple techniques, and integrate fairness considerations into existing machine learning workflows without requiring fundamental changes to their development practices.
 
+\section{Implementation Details}
+This section describes the core implementation details of the FairLib library's main components: Dataframe, Metrics, Pre-processing, and In-processing algorithms.
 
+\subsection{Metadata--Enriched DataFrame}
 
+Fairness assessments and mitigation strategies depend critically on two orthogonal pieces of information: (i) the decision variable $y$ (\emph{target}) and (ii) one or more protected or sensitive attributes $S$. In conventional pipelines, these identifiers are typically passed as arguments to each function invocation, a practice that is both verbose and error-prone. To streamline this process, metadata is embedded directly into the standard \texttt{pandas.DataFrame}.
+
+\paragraph{Design choice.} Although defining a new subclass of \texttt{DataFrame} might appear to be a clean and modular solution, it proves to be impractical in real-world scenarios. Many widely used libraries, such as \texttt{scikit-learn}, perform internal operations that downcast custom subclasses to the base \texttt{DataFrame}, thereby stripping away any additional functionality or metadata. To preserve compatibility while extending functionality, the approach adopted here relies on \emph{monkey patching}~\cite{carattino2019monkey}: descriptors are attached at runtime to the global \texttt{pandas.DataFrame} class, allowing the enriched interface to coexist seamlessly with existing tooling.
+
+\begin{enumerate}[label=\alph*)]
+  \item \textbf{Metadata descriptors.} The attributes \texttt{targets} and \texttt{sensitive} are implemented as descriptors that read from and write to keys in \texttt{df.attrs}. Because \texttt{attrs} is serialised by pandas I/O backends, the annotations persist across copies, slices, concatenations, and round-trip storage.
+  \item \textbf{Utility transforms.} Methods such as \texttt{unpack()} are provided to operate on the data while preserving and propagating the associated metadata, even when structural changes occur in the underlying columns.
+  \item \textbf{Metric facades.} Parameterless methods such as \texttt{disparate\_impact()} and \texttt{statistical\_parity\_difference()} automatically retrieve $y$ and $S$ from the stored descriptors and delegate the computation to standard routines defined in \texttt{metrics}.
+\end{enumerate}
+
+\paragraph{Implementation.} Each descriptor is implemented as a specialised \texttt{property} that manipulates \texttt{df.attrs}. Metric wrappers include validation logic and invoke the appropriate computational backend using the metadata declared on the frame.
 
 
 
