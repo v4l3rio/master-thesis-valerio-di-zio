@@ -25,6 +25,26 @@
 
 \mainlinespacing{1.241} % line spacing in mainmatter, comment to default (1)
 
+% Stile listings
+\lstset{
+    language=Python,
+    backgroundcolor=\color{codebg},
+    frame=single,
+    rulecolor=\color{codeframe},
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    showstringspaces=false,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    numbersep=10pt,
+    tabsize=4,
+    captionpos=b,
+    xleftmargin=1em,
+    xrightmargin=1em,
+    aboveskip=1em,
+    belowskip=1em,
+}
+
 \begin{document}
 
 \frontmatter\frontispiece
@@ -572,6 +592,213 @@ Fairness assessments and mitigation strategies depend critically on two orthogon
 \end{enumerate}
 
 \paragraph{Implementation.} Each descriptor is implemented as a specialised \texttt{property} that manipulates \texttt{df.attrs}. Metric wrappers include validation logic and invoke the appropriate computational backend using the metadata declared on the frame.
+
+\subsection*{Fairness Metrics}
+
+The \textit{metrics} module embodies a rigorously structured architectural strategy aimed at reconciling computational performance with usability and extensibility. Central to its design is a clear separation of concerns that distinguishes the mathematical core of fairness metric computation from their operational integration within the overarching data analysis framework.
+
+The adoption of a dual-layer architecture is motivated by the heterogeneity of the intended user base and use cases. On the one hand, data scientists require efficient and portable computational primitives that integrate seamlessly with \texttt{NumPy}-centric analytical workflows. On the other hand, end-users and applied practitioners benefit from higher-level abstractions that interface intuitively with custom data containers. To this end, core metric functions such as \texttt{disparate\_impact}, \texttt{statistical\_parity\_difference}, and \texttt{equality\_of\_opportunity} are implemented as independent, framework-agnostic operations over \texttt{NumPy} arrays. These low-level primitives are encapsulated within class-based wrappers (\texttt{DisparateImpact}, \texttt{StatisticalParityDifference}, etc.), which inherit from a common \texttt{Metric} base class, thereby enabling polymorphic usage and seamless integration with the DataFrame abstraction layer.
+
+A particularly novel aspect of the design is the extension mechanism, which allows metric functionalities to be dynamically attached to \texttt{DataFrame} instances via a descriptor-based pattern, implemented through \texttt{DataFrameExtensionFunction}. In practice, this design allows users to invoke metrics via an object-oriented syntax (e.g., df.statistical\_parity\_difference()), which enhances discoverability and ease of use. This syntactic convenience significantly enhances the discoverability and accessibility of fairness evaluation tools, aligning with established paradigms in exploratory data analysis and interactive computing.
+
+The inherent multi-dimensionality of fairness evaluation outcomes necessitated the introduction of dedicated data structures. In particular, the \texttt{DomainDict} class provides a semantically rich mapping layer that supports flexible querying across sensitive attributes, prediction targets, and their value combinations. This enables domain-aware operations such as selective retrieval by attribute names, partial assignments, or intersectional groupings, which are essential for nuanced fairness analyses across diverse population strata.
+
+Robust input validation and exception handling are implemented as first-class concerns within the library. The \texttt{check\_and\_setup} utility performs comprehensive precondition checks to ensure the dimensional alignment of sensitive attributes and outcome variables, issuing informative warnings in edge cases such as low group cardinality or missing categories. Furthermore, boundary conditions—such as metrics computed on empty demographic groups—are gracefully handled using \texttt{NaN} or infinite values, preserving the semantic consistency of results while avoiding runtime interruptions.
+
+Finally, the metrics module supports multiple output modalities via the \texttt{as\_dict} parameter, which enables users to toggle between matrix-based representations optimized for numerical pipelines and dictionary-based formats that enhance readability and facilitate downstream processing (e.g., visualization or reporting). This dual-mode output capability reflects a deliberate design decision to serve both programmatic and interpretive aspects of fairness analysis within responsible machine learning workflows.
+
+
+\subsubsection{Statistical Parity Difference}
+
+Statistical Parity Difference represents a fundamental group fairness metric that quantifies the disparity in favorable outcome probabilities between privileged and unprivileged demographic groups. The theoretical foundation of this metric rests on the principle of demographic parity, which stipulates that a fair algorithmic system should produce equal acceptance rates across all protected groups, irrespective of the underlying ground truth distribution.
+
+Mathematically, Statistical Parity Difference is formulated as:
+\begin{equation}
+\text{SPD} = P(\hat{Y}=1|S=\text{privileged}) - P(\hat{Y}=1|S=\text{unprivileged})
+\end{equation}
+where $\hat{Y}$ denotes the predicted outcome, $S$ represents the sensitive attribute, and the probabilities are computed over the respective demographic subgroups.
+
+The implementation in FairLib follows a dual-layer architectural pattern, providing both a low-level functional interface and a high-level object-oriented wrapper. The core computational logic iterates through all unique combinations of target and sensitive attribute values, calculating group-specific acceptance rates through array masking operations. For each sensitive group $s$, the algorithm computes the privileged rate as $\frac{|{i: \hat{y}_i = t \land s_i = s}|}{|{i: s_i = s}|}$ and the unprivileged rate as $\frac{|{i: \hat{y}_i = t \land s_i \neq s}|}{|{i: s_i \neq s}|}$, where $t$ represents the target value. The implementation incorporates robust error handling for edge cases, including scenarios with empty subgroups, where infinite values are assigned to maintain mathematical consistency. The metric returns values in the range $[-1, 1]$, with zero indicating perfect fairness and values within $[-0.1, 0.1]$ generally considered acceptable in practical applications.
+
+\subsubsection{Disparate Impact}
+
+Disparate Impact constitutes a ratio-based fairness metric that emerged from legal frameworks, particularly the "80\% rule" established in US anti-discrimination jurisprudence. This metric addresses the detection of indirect discrimination by measuring the relative likelihood of favorable outcomes between demographic groups, providing a multiplicative rather than additive perspective on fairness violations.
+
+The mathematical formulation of Disparate Impact is expressed as:
+\begin{equation}
+\text{DI} = \frac{P(\hat{Y}=1|S=\text{unprivileged})}{P(\hat{Y}=1|S=\text{privileged})}
+\end{equation}
+This ratio-based approach offers intuitive interpretation: values below 1.0 indicate systematic disadvantage for the unprivileged group, while values above 1.0 suggest the opposite bias pattern.
+
+The computational implementation mirrors the Statistical Parity Difference algorithm in its structural approach, utilizing the same group-wise probability estimation methodology. However, the critical distinction lies in the final aggregation step, where the unprivileged rate is divided by the privileged rate rather than subtracted. The implementation demonstrates careful attention to numerical stability, handling division-by-zero scenarios through appropriate infinite value assignments. The algorithm maintains consistency with legal standards by producing values in the range $[0, \infty)$, where perfect fairness corresponds to 1.0, and the legally acceptable threshold of 0.8 serves as a practical lower bound. Moreover, the FairLib implementation supports more complex scenarios, including multi-class targets and multiple sensitive attributes. It performs a comprehensive combinatorial evaluation across all target and attribute combinations, organizing the results in a structured DomainDict format. This design facilitates intersectional fairness analysis across diverse demographic categories.
+
+\subsection{Equality of Opportunity}
+
+Equality of Opportunity represents a more nuanced approach to algorithmic fairness that focuses specifically on ensuring equitable treatment among qualified individuals across demographic groups. This metric, grounded in the philosophical principle of meritocratic fairness, addresses scenarios where the primary concern is preventing discrimination against individuals who legitimately deserve favorable outcomes.
+
+The theoretical framework centers on the concept of True Positive Rate (TPR) equalization, mathematically expressed as:
+\begin{equation}
+\text{EOO} = \text{TPR} {\text{privileged}} - \text{TPR} {\text{unprivileged}}
+\end{equation}
+where $\text{TPR}_{g} = P(\hat{Y}=1|Y=1, S=g)$ represents the true positive rate for demographic group $g$. This formulation ensures that qualified individuals (those with $Y=1$) have equal probabilities of receiving positive predictions regardless of their protected attribute status.
+
+The implementation architecture in FairLib demonstrates sophisticated handling of the three-way relationship between true labels, predictions, and sensitive attributes. The algorithm employs boolean masking operations to identify qualified individuals within each demographic group, subsequently computing group-specific true positive rates through vectorized operations. The algorithm creates a boolean mask for the privileged group (e.g., $sensitive\_column == privileged\_value$) and its complement for the unprivileged group ($sensitive\_column != privileged\_value$). It then intersects these masks with the positive ground-truth mask ($target\_column == positive\_target$) to isolate qualified individuals in each group
+
+The true positive rates are calculated as the ratio of correctly predicted positive cases to total positive cases within each group, with appropriate handling of empty sets through infinite value assignment. Unlike previous metrics, Equality of Opportunity requires an additional input—the ground truth labels (true outcomes)—making it suitable for post-hoc fairness evaluation after model training The metric produces values in the range $[-1, 1]$, where zero indicates perfect equality of opportunity, and the implementation supports flexible positive class specification through the positive\_target parameter, accommodating diverse labeling conventions across different application domains.
+
+\subsection{Pre-Processing Algorithms}
+The pre-processing module of FairLib implements a suite of algorithms designed to mitigate bias in datasets before model training. These algorithms transform the input data to reduce the influence of sensitive attributes, ensuring that subsequent learning processes are less affected by inherent biases.
+
+The preprocessing module uses a consistent interface architecture (inspired by scikit-learn) designed specifically to work with FairLib’s enhanced DataFrame structure. The core interface consists of three primary methods: \texttt{fit()}, \texttt{transform()}, and \texttt{fit\_transform()}. The \texttt{fit\_transform()} method serves as the primary interface that all preprocessing algorithms must implement, combining parameter learning and data transformation in a single operation. For algorithms requiring separate fitting and transformation phases, the \texttt{fit()} method learns parameters from the training data without modifying it, while \texttt{transform()} applies the learned transformation to new data. This separation enables efficient preprocessing of multiple datasets using the same learned parameters, which is particularly useful in train–test scenarios.
+
+All methods are designed to work exclusively with FairLib’s custom DataFrame, which extends the standard pandas DataFrame by preserving metadata for target and sensitive attributes. In particular, the DataFrame’s \texttt{unpack()} method automatically extracts the feature matrix, target labels, and sensitive attribute indices, while built-in validation ensures consistent data structure across algorithms.
+
+\subsubsection{Reweighing Implementation}
+The Reweighing algorithm implementation follows the statistical approach proposed by Kamiran and Calders \cite{kamiran2013quantifying}, where instance weights are computed to achieve statistical parity across different demographic groups. The core implementation centers around a static method \texttt{\_reweighing}, which calculates four distinct weight values corresponding to the combinations of privileged/unprivileged group status and favorable/unfavorable outcome.
+
+The algorithm first validates the input DataFrame structure and identifies the target column. It then creates boolean masks for favorable and unfavorable outcomes using a private utility function \texttt{get\_favorable\_unfavorable\_masks}. For each combination of sensitive attribute value and target outcome, a weight is computed using the ratio formula 
+\[ 
+w \;=\; \frac{n_{\text{outcome}} \times n_{\text{group}}}{\,n_{\text{total}} \times n_{\text{joint}}\,}\,,
+\] 
+where $n_{\text{outcome}}$ is the total number of instances with the specified outcome (favorable or unfavorable) in the entire dataset, $n_{\text{group}}$ is the number of instances in the given demographic group (privileged or unprivileged), $n_{\text{total}}$ is the total number of instances in the dataset, and $n_{\text{joint}}$ is the number of instances that belong to both that group and that outcome category. The implementation also includes a specialized variant called \texttt{ReweighingWithMean}. This variant handles cases with multiple sensitive attributes by computing weights for each attribute independently and then averaging them, providing a more nuanced approach for intersectional fairness scenarios. The final transformed DataFrame includes a new \texttt{weights} column that can be directly used with scikit-learn classifiers via the \texttt{sample\_weight} parameter during training.
+
+\subsubsection{Learning Fair Representations Implementation}
+The Learning Fair Representations (LFR) algorithm is implemented as a deep neural network consisting of three interconnected components—an encoder, a decoder, and a classifier—constructed with PyTorch. The encoder network transforms the input features into a lower-dimensional “fair” representation using a three-layer fully connected architecture (input $\to$ 64 $\to$ 32 $\to$ latent\_dim) with ReLU activations. The decoder then attempts to reconstruct the original feature space from this representation using a symmetric architecture (latent\_dim $\to$ 32 $\to$ 64 $\to$ output\_dim). Finally, a classifier component predicts the target label from the fair representation using a two-layer network that culminates in a sigmoid output unit for binary classification.
+
+The training process optimizes a multi-objective loss function 
+\[ 
+L_{\text{total}} \;=\; \alpha_z\,L_z \;+\; \alpha_x\,L_x \;+\; \alpha_y\,L_y\,,
+\] 
+where $L_z$ is a fairness loss defined as the sum of squared differences between the mean representations of the protected and unprotected groups, $L_x$ is a reconstruction loss (measured as the mean squared error between the original features and their reconstructed counterparts), and $L_y$ is the binary cross-entropy loss for predicting the target. All three networks (encoder, decoder, and classifier) are trained jointly using the Adam optimizer, and input features are standardized via scikit-learn’s \texttt{StandardScaler} prior to training. During each forward pass, the encoder produces a fair representation, which the decoder uses to reconstruct the inputs and the classifier uses to predict the outcome. This joint training procedure ensures that the learned representations preserve predictive utility while minimizing sensitive attribute information. In particular, the fairness loss term $L_z$ serves as a statistical parity regularizer, encouraging the encoded representations to be independent of the sensitive attribute.
+
+\subsubsection{Disparate Impact Remover Implementation}
+The Disparate Impact Remover algorithm implements the fairness-aware “data repair” technique proposed by Feldman et al.~\cite{feldman2015certifyingremovingdisparateimpact}. This technique transforms feature distributions to achieve statistical parity across demographic groups through quantile-based distribution alignment.
+
+In the implementation, the first step is to compute the empirical cumulative distribution function (CDF) for each feature within each sensitive attribute group. A helper function \texttt{\_make\_cdf} is used for this purpose; it returns a callable CDF for a given feature by sorting the feature values and enabling binary search lookup of quantile positions. During the fitting phase, the algorithm then constructs a quantile “map” for each feature as follows: it groups the data by sensitive attribute, establishes a common grid of quantile values (e.g., using \texttt{np.linspace} from 0 to 1), and computes the median feature value across all groups at each quantile level. These median values across quantiles form a reference distribution for the feature that represents a merged (fair) version of the original group-specific distributions.
+
+In the transformation phase, each feature value $x$ is adjusted via this reference distribution. For a given data point, the algorithm first determines the quantile rank of $x$ within the CDF of its own sensitive group. It then uses linear interpolation (via \texttt{np.interp}) to map that quantile to the corresponding value in the reference (median) distribution. The resulting value $x_{\text{median}}$ is the fully “repaired” version of $x$ (i.e., the value $x$ would have in the median distribution). Finally, the algorithm computes the output as a weighted combination of the original and repaired values: 
+\[ 
+x_{\text{repaired}} \;=\; (1 - \lambda)\,x_{\text{original}} \;+\; \lambda\,x_{\text{median}}\,
+\] 
+Here $\lambda$ is the repair level parameter that controls the trade-off between fairness and data fidelity.
+
+This approach makes the marginal distributions of each feature much more similar across different demographic groups, thereby reducing disparate impact, while still preserving some of the original data characteristics. The repair level $\lambda$ allows practitioners to balance between achieving complete distributional fairness ($\lambda = 1$, using only the median-aligned value) and preserving the original feature values ($\lambda = 0$, no adjustment). Additionally, the implementation preserves metadata consistency by keeping the same column names and retaining sensitive attribute information in the transformed DataFrame.
+
+\subsection{In-Processing Algorithms}
+The in-processing module of FairLib implements advanced fairness-aware machine learning algorithms by integrating fairness constraints directly into model training. This approach enables the simultaneous optimization of predictive accuracy and fairness objectives, allowing practitioners to achieve better trade-offs between these often competing goals. The implementation follows a modular design pattern, and all algorithms inherit from a common \texttt{Processor} base class that defines standard \texttt{fit()} and \texttt{predict()} methods. This abstraction ensures a consistent interface across different fairness algorithms and compatibility with FairLib’s DataFrame-based data handling system, making it easy to interchange in-processing mitigation methods within the library.
+\subsubsection{Adversarial Debiasing Implementation}
+Building on the original Adversarial Debiasing framework of \cite{zhang2018mitigatingunwantedbiasesadversarial}, we adopt the architectural refinement proposed by \cite{beutel2017datadecisionstheoreticalimplications} in which the \emph{adversary consumes an intermediate hidden representation} rather than the predictor’s final logits.  This shift from an \textit{output-based} to a \textit{representation-based} adversarial signal encourages the predictor to remove sensitive information \emph{earlier} in the network and has been shown to yield stronger fairness guarantees while retaining predictive power.
+
+The algorithm is implemented as a dual-network architecture in PyTorch, consisting of a predictor network and an adversarial network connected via a custom gradient-reversal layer.  At the heart of the implementation is the \texttt{GradientReversal} function, a custom autograd function that forwards inputs unchanged in the forward pass but in the backward pass multiplies the gradients by $-\lambda_{\text{adv}}$, thereby reversing and scaling them by the factor $\lambda_{\text{adv}}$.  
+
+The predictor network is a three-layer feed-forward model: each hidden layer applies batch normalization (\texttt{BatchNorm1d}) before a linear transformation, followed by a ReLU activation and dropout (default drop rate $0.3$) for regularization.  Crucially, it returns both the task logits and the hidden representation $\mathbf{h}$ that serves as input to the adversary.  Both the predictor and the adversary can be replaced with custom \texttt{nn.Module}s, provided they share a compatible interface: (i) the predictor must expose a representation whose dimensionality matches the adversary’s input size, and (ii) both modules must return logits suitable for their respective loss functions.
+
+An example of this architecture is shown in Figure~\ref{fig:adversarial_debiasing}.
+\begin{figure}
+  \centering
+  \includegraphics[width=0.9\textwidth]{figures/adversarial_debiasing.pdf}
+  \caption{Adversarial Debiasing architecture: a predictor network learns to make predictions while an adversarial network attempts to predict the sensitive attribute from the predictor's \emph{internal} representation, following the hidden-layer strategy.}
+  \label{fig:adversarial_debiasing}
+\end{figure}
+
+This flexibility allows practitioners to experiment with deeper, convolutional, or transformer-based architectures without changing the training loop.  The adversarial network mirrors the predictor's architecture (including batch normalization and dropout) but employs LeakyReLU activations in its hidden layers.  During training, an alternating optimization strategy is employed: in each iteration, the adversary is first updated for a fixed number of steps (\texttt{adv\_steps}) to better predict the sensitive attribute from $\mathbf{h}$ (with predictor parameters frozen), and then the predictor is updated (via the gradient-reversal mechanism) to minimize its primary prediction loss while \emph{maximizing} the adversary’s loss.  This effectively forces the predictor to learn representations that confound the adversary, thereby promoting fairness at the representation level.  To stabilize training, gradient clipping (max-norm $1.0$) is applied to both networks, and optimization is performed with AdamW (including weight decay).  Hyperparameters such as learning rates, batch size, the number of adversary steps, and the critical $\lambda_{\text{adv}}$ parameter controlling the fairness–accuracy trade-off remain fully configurable.
+
+\subsubsection{FaUCI Implementation}
+The \textbf{FaUCI} (Fairness Under Constrained Injection) algorithm incorporates fairness metrics directly into the loss function as regularization terms. It is implemented through a modular loss architecture that seamlessly integrates with standard PyTorch training workflows. In particular, a hierarchical loss design is used: a base loss (e.g. cross-entropy for classification) is encapsulated by a \texttt{BaseLoss} class, and a \texttt{PenalizedLoss} subclass extends this by adding a fairness regularization term. The total loss at each training step is computed as a weighted sum of the base loss and the fairness penalty:
+
+\begin{equation}
+    L_{\text{total}} \;=\; (1 - w)\,L_{\text{base}} \;+\; w\,L_{\text{fairness}},
+\end{equation}
+
+where $w$ is the regularization weight that controls the trade-off between accuracy and fairness. The fairness penalty leverages a pluggable metric system (implemented in \texttt{\_torch\_metrics.py}) supporting metrics such as Statistical Parity Difference (SPD) and Disparate Impact (DI). These metrics are computed on each mini-batch during training to provide an on-the-fly estimate of unfairness. For example, the SPD metric is calculated as the absolute difference in positive outcome probability between the protected and unprotected groups, while the DI metric is the ratio of these probabilities. Both metrics are efficiently computed using the model’s predictions for the current mini-batch, with a small epsilon (e.g. $10^{-7}$) added to probability estimates to ensure numerical stability (avoiding division by zero or undefined log values). The \texttt{FaUCI} class serves as the main processor for this algorithm, wrapping an arbitrary PyTorch model and managing the training loop via a flexible interface. It allows users to specify custom optimizers, base loss functions, and fairness metrics (along with the regularization weight $w$). During training, the sensitive attribute values for each batch are passed into the loss computation (via a property injection mechanism) so that the fairness metric can be evaluated for that batch’s predictions. The implementation supports a range of hyperparameters including the number of epochs, batch size, and the regularization weight $w$, making FaUCI a versatile framework for exploring different fairness–accuracy trade-offs.
+
+\subsubsection{Prejudice Remover Implementation}
+The Prejudice Remover algorithm is implemented via a mutual-information-based regularization framework, which explicitly penalizes the model for encoding statistical dependence between its predictions and the sensitive attribute. The core of this approach is a \texttt{PrejudiceRemoverLoss} that augments the standard prediction loss with a mutual information (MI) penalty term:
+\begin{equation}
+    L_{\text{total}} = L_{\text{base}} \;+\; \eta \cdot MI(\hat{Y}, S)\,
+\end{equation}
+where $\eta$ is a hyperparameter controlling the strength of the fairness regularization. Here $MI(\hat{Y}, S)$ measures the mutual information between the model’s output $\hat{Y}$ and the sensitive attribute $S$, which is zero if the predictions are independent of $S$. In practice, this mutual information is estimated on each mini-batch by computing the joint distribution $P(\hat{Y}, S)$ and the marginal distributions $P(\hat{Y})$ and $P(S)$ from the batch’s predictions and labels. The implementation calculates group-conditional probabilities (such as $P(\hat{Y}=1 \mid S=0)$ and $P(\hat{Y}=1 \mid S=1)$) by averaging the model’s predicted probabilities for the positive class within each sensitive group in the batch. Using these, it obtains estimates of $P(\hat{Y}=1, S=0)$, $P(\hat{Y}=1, S=1)$, etc., for all four combinations of binary outcome and sensitive value. To prevent numerical issues (e.g. $\log(0)$), a small epsilon ($10^{-8}$) is added to each probability estimate. The mutual information penalty is then computed as the Kullback–Leibler divergence between the joint and product-of-marginals distributions:
+\begin{equation}
+    MI(\hat{Y}, S) \;\approx\; \sum_{y\in\{0,1\}} \sum_{s\in\{0,1\}} P(\hat{Y}=y,\;S=s)\; \log \frac{P(\hat{Y}=y,\;S=s)}{\,P(\hat{Y}=y)\,P(S=s)\,}\,
+\end{equation}
+which corresponds to summing over the four possible $(y, s)$ combinations in the binary case. The \texttt{PrejudiceRemover} class integrates this loss into a PyTorch training pipeline, allowing flexible model architectures via dependency injection and automatically converting FairLib’s DataFrame inputs into tensors for training. The training routine ensures proper gradient flow through the mutual information term (so that the model’s predictions are influenced by the penalty), and it supports both binary cross-entropy and mean squared error as the base loss (depending on the prediction task). To help practitioners monitor progress, the implementation includes extensive logging of metrics, tracking the model’s predictive performance as well as fairness indicators (such as the estimated $MI$ or group outcome differences) at each epoch. This mutual-information regularization approach (originally proposed by Kamishima et al. \cite{kamishima2012prejudiceremoverregularizer}) encourages the model to produce fairer predictions by explicitly discouraging any measurable dependency between $\hat{Y}$ and $S$.
+
+\chapter{Evaluation and Results}
+
+%------------------------------------------------
+\section{Introduction}
+This chapter presents an empirical evaluation of the proposed Python library for algorithmic fairness. We analyse its behaviour along four complementary axes: \emph{verbosity of the API}, \emph{ease of use}, \emph{seamless integration within existing machine--learning pipelines}, and \emph{quantitative impact on fairness metrics}. The goal is to provide a comprehensive view of the trade--offs introduced by the library and to validate its practical utility.
+
+%------------------------------------------------
+\section{Verbosity Analysis}
+In this section we quantify the amount of code required to express common fairness workflows using the library such as computing fairness metrics, applying pre-processing algorithms, and integrating in-processing techniques. 
+
+
+\subsection{Metrics}
+The \texttt{FairLib} library provides a streamlined interface for computing a wide variety of fairness metrics, allowing for efficient integration into experimental workflows. In particular, it supports the evaluation of group fairness criteria with minimal coding effort. The code snippet \ref{lst:metrics_example} illustrates how to compute key metrics such as Statistical Parity Difference, Disparate Impact, and Equality of Opportunity, which are commonly used to assess the presence of bias in classification models.
+
+\lstinputlisting[caption={Example Python script for computing fairness metrics}, label={lst:metrics_example}]{listings/results/metrics.py}
+
+Only twelve lines-eight if we omit comments-are needed to progress from raw tabular data to a structured fairness report. Each metric call returns a dictionary. The library automatically infers the target and sensitive attributes from the DataFrame metadata, eliminating the need for explicit parameter passing. This significantly reduces cognitive load and potential errors in specifying these identifiers.
+
+\subsection{Pre-processing Algorithms}
+The library's pre-processing algorithms are designed to be easily applied to datasets with minimal boilerplate code. The code snippet \ref{lst:preprocessing_example} demonstrates how to apply the Reweighing algorithm, which adjusts instance weights to mitigate bias in classification tasks. The example shows how to instantiate the algorithm, fit it to the data, and transform the dataset in just a few lines of code.
+
+\lstinputlisting[caption={Example Python script for applying the Reweighing pre-processing algorithm}, label={lst:preprocessing_example}]{listings/results/preprocessing.py}
+
+Support for \textbf{multiple sensitive attributes} enables intersectional fairness analysis within the library’s framework. Instance weights are automatically computed and appended to the dataset, allowing for seamless integration with scikit-learn classifiers via the \texttt{sample\_weight} parameter.
+
+The Reweighing algorithm is particularly useful for addressing disparities in classification outcomes by adjusting the weights of instances based on their sensitive attributes. The library's design allows users to easily switch between different pre-processing techniques, such as Learning Fair Representations or Disparate Impact Remover, with minimal code changes.
+
+\subsection{In-processing Algorithms}
+The in-processing algorithms in FairLib are designed to be easily integrated into existing machine learning workflows. The code snippet \ref{lst:inprocessing_example} illustrates how to apply the Adversarial Debiasing algorithm, which trains a model to make predictions while simultaneously minimizing bias with respect to sensitive attributes.
+
+\lstinputlisting[caption={Example Python script for applying the Adversarial Debiasing in-processing algorithm}, label={lst:inprocessing_example}]{listings/results/inprocessing.py}
+
+The example shows how to instantiate the Adversarial Debiasing processor, fit it to the training data, and make predictions with just a few lines of code. The library's design allows users to easily switch between different in-processing techniques, such as FaUCI or Prejudice Remover, with minimal code changes.
+
+%------------------------------------------------
+\section{Integration into Existing Pipelines}
+This section explores how the library can be embedded into pre--existing scikit--learn\,/\,PyTorch pipelines with minimal refactoring. We discuss interoperability with data preprocessing stages, hyperparameter optimisation loops, and model persistence mechanisms.
+
+\subsection{Preprocessing Integration}
+The library's preprocessing algorithms can be seamlessly integrated into existing data pipelines. The code snippet \ref{lst:unfair_preprocessing} shows a basic example of binary classification, without the application of any fairness algorithms.
+
+\lstinputlisting[caption={Example Python script of a classification process without application of fairness}, label={lst:unfair_preprocessing}]{listings/integrations/preprocessing.py}
+
+In contrast, the code snippet \ref{lst:fair_preprocessing} demonstrates how to apply the LFR pre-processing algorithm to the same dataset, adjusting instance weights based on sensitive attributes.
+
+\lstinputlisting[caption={Example Python script of a classification process with application of fairness}, label={lst:fair_preprocessing}]{listings/integrations/fair_preprocessing.py}
+
+This example illustrates how the library's preprocessing algorithms can be easily integrated into existing data pipelines, allowing users to apply fairness techniques without significant changes to their codebase. The preprocessing step is performed before model training, ensuring that the model learns from a fair representation of the data.
+
+\subsection{In-processing Integration}
+
+The library's in-processing algorithms can be integrated into existing model training workflows with minimal code changes. The code snippet \ref{lst:unfair_inprocessing} shows a basic example of training a PyTorch model without applying any fairness techniques.
+
+\lstinputlisting[caption={Example Python script of a PyTorch model training process without application of fairness}, label={lst:unfair_inprocessing}]{listings/integrations/inprocessing.py}
+
+
+%------------------------------------------------
+\section{Fairness Metrics: Before and After Mitigation}
+\subsection{Experimental Setup}
+We describe the datasets, target variables, protected attributes, and evaluation protocol employed to measure fairness both prior to and after applying the library's preprocessing and in--processing algorithms.
+
+\subsection{Results Summary}
+A concise presentation of key numerical results, focusing on disparity measures (e.g., Statistical Parity Difference, Equal Opportunity Difference) and performance metrics (e.g., accuracy, F1--score).
+
+\subsection{Discussion}
+We contextualise the observed changes, discussing trade--offs between predictive performance and fairness, as well as the relative effectiveness of preprocessing versus in--processing techniques.
+
+%------------------------------------------------
+\section{Threats to Validity}
+We identify potential limitations of the experimental design, including dataset bias, metric selection, and external validity concerns, and discuss their implications.
+
+%------------------------------------------------
+\section{Conclusion}
+We summarise the main findings and outline future avenues to further enhance the library's usability and fairness guarantees.
+
+
 
 
 

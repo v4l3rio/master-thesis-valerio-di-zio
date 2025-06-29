@@ -38,3 +38,28 @@
 	ndkeywords={@Deprecated, @JvmField, @JvmName, @JvmOverloads, @JvmStatic, @JvmSynthetic, Array, Byte, Double, Float, Int, Integer, Iterable, Long, Runnable, Short, String, Unit, it},
 	sensitive=true
 }
+
+% ================================================================
+
+% Definizione di colori
+\definecolor{codebg}{rgb}{0.95,0.95,0.92}
+\definecolor{codeframe}{rgb}{0.8,0.8,0.8}
+\definecolor{string}{rgb}{0.58,0,0.82}
+\definecolor{comment}{rgb}{0,0.5,0}
+\definecolor{keyword}{rgb}{0,0,0.8}
+
+% Setup listings per Python
+\lstdefinelanguage{Python}{
+    keywords={def, return, if, elif, else, while, for, in, try, except, finally,
+              raise, import, from, as, class, pass, break, continue, lambda, with, assert, yield, True, False, None},
+    keywordstyle=\color{keyword}\bfseries,
+    ndkeywords={self},
+    ndkeywordstyle=\color{black},
+    identifierstyle=\color{black},
+    sensitive=true,
+    comment=[l]{\#},
+    commentstyle=\color{comment}\itshape,
+    stringstyle=\color{string},
+    morestring=[b]',
+    morestring=[b]",
+}
