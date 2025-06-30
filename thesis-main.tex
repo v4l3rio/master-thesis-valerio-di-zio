@@ -18,10 +18,6 @@
 \session{I}
 \academicyear{2024-2025}
 
-% Definition of acronyms
-\acrodef{IoT}{Internet of Thing}
-\acrodef{vm}[VM]{Virtual Machine}
-
 
 \mainlinespacing{1.241} % line spacing in mainmatter, comment to default (1)
 
@@ -60,7 +56,7 @@ By coupling a critical analysis of fairness concepts with a practical, extensibl
 \end{abstract}
 
 \begin{dedication} % this is optional
-A tutte le persone che hanno reso questi anni magici e indimenticabili.
+Dedica qui!
 \end{dedication}
 
 %----------------------------------------------------------------------------------------
@@ -74,12 +70,11 @@ A tutte le persone che hanno reso questi anni magici e indimenticabili.
 %----------------------------------------------------------------------------------------
 \chapter{Introduction}
 \label{chap:introduction}
-Artificial-intelligence (AI) systems increasingly mediate decisions about
+Artificial intelligence (AI) systems increasingly mediate decisions about
 credit, employment, healthcare, justice, and mobility.  Their scale and
 opacity mean that even small statistical biases can translate into
 systematic, large-scale harm.  The goal of \emph{algorithmic fairness} is
-therefore to ensure that automated decisions do not introduce—nor
-amplify—unjustified discrimination against protected groups
+therefore to ensure that automated decisions do not introduce or amplify unjustified discrimination against protected groups
 \cite{mehrabi2021survey}.  Achieving that goal, however, remains
 challenging because unfairness can emerge at many points in the
 machine-learning (ML) pipeline, from data collection to model
@@ -91,7 +86,7 @@ deployment, and because technical, legal, and ethical notions of
   \item \textbf{Diagnose the problem:}  
   We survey the landscape of algorithmic unfairness, definitions of
   fairness, sources of bias (representation, measurement, aggregation,
-  and historical), and the feedback loops that can entrench disparities.
+  and historical), and the \textbf{feedback loops} that can entrench disparities.
   We also review state-of-the-art mitigation strategies that operate at
   three key stages of the ML lifecycle:
   \emph{pre-processing} (data repair and re-weighting),
@@ -116,8 +111,8 @@ persistent shortcomings:
 
   \item \textbf{Verbosity and operational complexity:}  
   Even elementary tasks—such as computing a single fairness metric or launching
-  a standard debiasing pass—require boiler-plate scripts and nested wrapper
-  objects, raising the learning curve and discouraging rapid experimentation.
+  a standard debiasing pass—require boilerplate scripts and nested wrapper
+  objects, making the tool harder to learn and discouraging rapid experimentation.
 
   \item \textbf{Binary-only focus:}
   Most built-in metrics and mitigation routines assume \emph{binary} sensitive
@@ -157,7 +152,7 @@ corresponding limitation identified above:
   point most compatible with data-governance and privacy constraints.
 
   \item \textbf{Enabling customisable trade-offs and models:}  
-  Every mitigation algorithm surfaces its fairness penalty as an hyperparameter and accepts a user-supplied estimator, which can range from linear models to bespoke neural networks, thereby supporting automatic exploration of the fairness–utility frontier without sacrificing architectural flexibility.
+  Every mitigation algorithm surfaces its fairness penalty as a hyperparameter and accepts a user-supplied estimator, which can range from linear models to bespoke neural networks, thereby supporting automatic exploration of the fairness–utility frontier without sacrificing architectural flexibility.
 
   \item \textbf{Ensuring seamless workflow integration:}  
   Native PyTorch wrappers and drop-in scikit-learn compatibility allow FairLib components to slot directly into production notebooks, model registries, and CI/CD pipelines, overcoming the rigid, “model-locked” designs of prior toolkits.
@@ -663,7 +658,16 @@ w \;=\; \frac{n_{\text{outcome}} \times n_{\text{group}}}{\,n_{\text{total}} \ti
 where $n_{\text{outcome}}$ is the total number of instances with the specified outcome (favorable or unfavorable) in the entire dataset, $n_{\text{group}}$ is the number of instances in the given demographic group (privileged or unprivileged), $n_{\text{total}}$ is the total number of instances in the dataset, and $n_{\text{joint}}$ is the number of instances that belong to both that group and that outcome category. The implementation also includes a specialized variant called \texttt{ReweighingWithMean}. This variant handles cases with multiple sensitive attributes by computing weights for each attribute independently and then averaging them, providing a more nuanced approach for intersectional fairness scenarios. The final transformed DataFrame includes a new \texttt{weights} column that can be directly used with scikit-learn classifiers via the \texttt{sample\_weight} parameter during training.
 
 \subsubsection{Learning Fair Representations Implementation}
-The Learning Fair Representations (LFR) algorithm is implemented as a deep neural network consisting of three interconnected components—an encoder, a decoder, and a classifier—constructed with PyTorch. The encoder network transforms the input features into a lower-dimensional “fair” representation using a three-layer fully connected architecture (input $\to$ 64 $\to$ 32 $\to$ latent\_dim) with ReLU activations. The decoder then attempts to reconstruct the original feature space from this representation using a symmetric architecture (latent\_dim $\to$ 32 $\to$ 64 $\to$ output\_dim). Finally, a classifier component predicts the target label from the fair representation using a two-layer network that culminates in a sigmoid output unit for binary classification.
+The Learning Fair Representations (LFR) algorithm is implemented as a deep neural network consisting of three interconnected components—an encoder, a decoder, and a classifier—constructed with PyTorch. The encoder network transforms the input features into a lower-dimensional “fair” representation, \textit{as illustrated in} Figure~\ref{fig:lfr_architecture}, using a three-layer fully connected architecture (input $\rightarrow$ 64 $\rightarrow$ 32 $\rightarrow$ latent\_dim) with ReLU activations; this 64–32 configuration is simply the library’s default and can be replaced by defining custom \texttt{Encoder}, \texttt{Decoder}, and \texttt{Classifier} modules that respect the required layer dimensions, making the entire LFR pipeline fully customisable. The decoder then attempts to reconstruct the original feature space from this representation using the symmetric architecture (latent\_dim $\rightarrow$ 32 $\rightarrow$ 64 $\rightarrow$ output\_dim), which can likewise be adapted to alternative depths or widths. 
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{figures/lfr_architecture.png}
+\caption{Architecture of the Learning Fair Representations (LFR) algorithm. The encoder compresses input features into a fair representation and the classifier predicts the target label from the fair representation \cite{TayebiAidaLfr}.}
+\label{fig:lfr_architecture}
+\end{figure}
+
+Finally, a classifier component predicts the target label from the fair representation using a two-layer network that culminates in a sigmoid output unit for binary classification; like the encoder and decoder, this classifier can be freely re-implemented to suit specific tasks.
 
 The training process optimizes a multi-objective loss function 
 \[ 
@@ -778,25 +782,74 @@ The library's in-processing algorithms can be integrated into existing model tra
 
 \lstinputlisting[caption={Example Python script of a PyTorch model training process without application of fairness}, label={lst:unfair_inprocessing}]{listings/integrations/inprocessing.py}
 
+In contrast, the code snippet \ref{lst:fair_inprocessing} demonstrates how to apply FaUCI in-processing algorithm during model training.
+
+\lstinputlisting[caption={Example Python script of a PyTorch model training process with application of fairness}, label={lst:fair_inprocessing}]{listings/integrations/fair_inprocessing.py}
+
+This example illustrates how the library's in-processing algorithms can be easily integrated into existing model training workflows, allowing users to apply fairness techniques without significant changes to their codebase. The in-processing step is performed during model training, ensuring that the model learns to make fair predictions while optimizing for accuracy.
 
 %------------------------------------------------
 \section{Fairness Metrics: Before and After Mitigation}
 \subsection{Experimental Setup}
-We describe the datasets, target variables, protected attributes, and evaluation protocol employed to measure fairness both prior to and after applying the library's preprocessing and in--processing algorithms.
+We describe the datasets, target variables, protected attributes, and evaluation protocol employed to measure fairness both prior to and after applying the library's pre--processing and in--processing algorithms. For this evaluation, we use the Adult Income dataset \cite{adultDataset}, which contains demographic information about individuals and whether they earn more than \$50,000 per year. The sensitive attribute is \texttt{sex}, and the target variable is \texttt{income} (binary classification: income $\leq$ \$50,000 vs. income $>$ \$50,000). The dataset is split into training and test sets, with the training set used for model fitting and the test set for evaluation.
+
+The evaluation protocol, for \textbf{pre-processing algorithms}, consists of the following steps:
+\begin{enumerate}
+    \item Compute fairness metrics (Statistical Parity Difference, Disparate Impact) on the original dataset.
+    \item Apply pre-processing algorithms (Reweighing, Learning Fair Representations, Disparate Impact Remover) to the training set.
+    \item Train a classifier (logistic regression) on the transformed training set.
+    \item Compute fairness metrics on the test set after applying the pre-processing algorithms.
+\end{enumerate}
+
+For \textbf{in-processing algorithms}, the evaluation protocol consists of:
+\begin{enumerate}
+    \item Compute fairness metrics (Statistical Parity Difference, Disparate Impact) on the original dataset.
+    \item Train a classifier (logistic regression) with in-processing algorithms (Adversarial Debiasing, FaUCI, Prejudice Remover) integrated into the training loop.
+    \item Compute fairness metrics on the test set after training with in-processing algorithms.
+\end{enumerate}
 
 \subsection{Results Summary}
-A concise presentation of key numerical results, focusing on disparity measures (e.g., Statistical Parity Difference, Equal Opportunity Difference) and performance metrics (e.g., accuracy, F1--score).
+A concise presentation of key numerical results, focusing on disparity measures (e.g., Statistical Parity Difference, Disparate Impact) and accuracy.
+\subsubsection{Pre-processing Algorithms Results}
+The results of applying pre-processing algorithms to the Adult Income dataset are summarised in 3 figures. Figure \ref{fig:baseline_results} shows the accuracy of the baseline model and the models trained after applying pre-processing algorithms. The accuracy is computed on the test set of the Adult Income dataset.
+Figure \ref{fig:preprocessing_results} shows the Statistical Parity Difference (SPD) for the baseline model and the models trained after applying pre-processing algorithms. The SPD is computed on the test set of the Adult Income dataset. Figure \ref{fig:preprocessing_results_di} shows the Disparate Impact (DI) for the baseline model and the models trained after applying pre-processing algorithms. The DI is computed on the test set of the Adult Income dataset.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{figures/preprocessing_results/accuracy_comparison_chart.png}
+    \caption{Accuracy score for the baseline model and the models trained after applying pre-processing algorithms. The accuracy is computed on the test set of the Adult Income dataset.}
+    \label{fig:baseline_results}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{figures/preprocessing_results/spd_comparison_chart.png}
+    \caption{Statistical Parity Difference (SPD) for the baseline model and the models trained after applying pre-processing algorithms. The SPD is computed on the test set of the Adult Income dataset.}
+    \label{fig:preprocessing_results}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{figures/preprocessing_results/di_comparison_chart.png}
+    \caption{Disparate Impact (DI) for the baseline model and the models trained after applying pre-processing algorithms. The DI is computed on the test set of the Adult Income dataset.}
+    \label{fig:preprocessing_results_di}
+\end{figure}
+
+From the results obtained by applying the algorithms in the pre-processing module, we observe that all algorithms successfully reduce the Statistical Parity Difference (SPD) and Disparate Impact (DI) metrics compared to the baseline model.
+
+\subsubsection{In-processing Algorithms Results}
+
+The results of applying in-processing algorithms to the Adult Income dataset are summarised in 3 figures. Figure \ref{fig:baseline_results_inprocessing} shows the accuracy of the baseline model and the models trained after applying in-processing algorithms. The accuracy is computed on the test set of the Adult Income dataset.
+Figure \ref{fig:inprocessing_results} shows the Statistical Parity Difference (SPD) for the baseline model and the models trained after applying in-processing algorithms. The SPD is computed on the test set of the Adult Income dataset. Figure \ref{fig:inprocessing_results_di} shows the Disparate Impact (DI) for the baseline model and the models trained after applying in-processing algorithms. The DI is computed on the test set of the Adult Income dataset.
+
+% here we use the same figures as in the pre-processing section, but with the results obtained by applying the in-processing algorithms. to be created...
 
 \subsection{Discussion}
-We contextualise the observed changes, discussing trade--offs between predictive performance and fairness, as well as the relative effectiveness of preprocessing versus in--processing techniques.
-
-%------------------------------------------------
-\section{Threats to Validity}
-We identify potential limitations of the experimental design, including dataset bias, metric selection, and external validity concerns, and discuss their implications.
+The results demonstrate that the library's pre-processing and in-processing algorithms effectively reduce bias in classification tasks while maintaining competitive accuracy. The Statistical Parity Difference (SPD) and Disparate Impact (DI) metrics show significant improvements compared to the baseline model, indicating that the algorithms successfully mitigate disparities in outcomes across sensitive groups.
 
 %------------------------------------------------
 \section{Conclusion}
-We summarise the main findings and outline future avenues to further enhance the library's usability and fairness guarantees.
+This chapter has provided a comprehensive evaluation of the FairLib library, focusing on its usability, integration capabilities, and effectiveness in mitigating bias in machine learning models. The results demonstrate that FairLib offers a user-friendly interface for implementing fairness algorithms, with minimal code required to achieve significant improvements in fairness metrics. The library's design allows for seamless integration into existing machine learning workflows, making it a valuable tool for practitioners seeking to address algorithmic bias. The empirical results show that both pre-processing and in-processing algorithms can effectively reduce disparities in classification outcomes while maintaining competitive accuracy. The library's modular architecture and consistent interface make it easy to experiment with different fairness techniques, enabling users to tailor their approaches to specific datasets and fairness objectives.
 
 
 
