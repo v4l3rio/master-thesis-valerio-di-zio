@@ -48,9 +48,9 @@
 \begin{abstract}	
 Automated decision-making systems are rapidly permeating socially sensitive domains such as finance, healthcare, justice, and autonomous mobility.  While these data-driven solutions can increase efficiency, they can also perpetuate or amplify existing inequities whenever the underlying algorithms exhibit unfair behaviour.  This thesis provides a systematic investigation of algorithmic fairness, clarifying the multiple, often competing, formal definitions of fairness adopted in the literature and mapping them to the practical risks of bias and discrimination that arise throughout the machine-learning pipeline.
 
-After surveying the principal sources of bias—data imbalance, historical prejudice, model opacity, and feedback loops—the work reviews state-of-the-art mitigation strategies grouped into three families: pre-processing (data-repair and re-sampling techniques), in-processing (fairness-aware losses, constraints, and regularisers), and post-processing (prediction-adjustment and explanation tools).  Building upon these foundations, the thesis introduces FairLib: a modular, open-source library that unifies bias-diagnosis metrics, visual analytics, and mitigation algorithms behind a consistent API.  FairLib is designed to be model-agnostic, seamlessly integrating with popular ML frameworks, and to facilitate reproducible experimentation through configurable pipelines.
+After surveying the principal sources of bias—data imbalance, historical prejudice, model opacity, and feedback loops—the work reviews state-of-the-art mitigation strategies grouped into three families: pre-processing (data-repair and re-sampling techniques), in-processing (fairness-aware losses, constraints, and regularisers), and post-processing (prediction-adjustment and explanation tools).  Building upon these foundations, the thesis introduces \textbf{FairLib}: a modular, open-source library \emph{developed to address limitations observed in existing fairness toolkits} that unifies bias-diagnosis metrics and mitigation algorithms behind a consistent API.  FairLib is designed to be model-agnostic, seamlessly integrating with popular ML frameworks, and to facilitate reproducible experimentation through configurable pipelines.
 
-A preliminary evaluation on the canonical Adult income dataset indicates that selected FairLib pipelines can measurably reduce unfairness while leaving overall predictive accuracy broadly unchanged. Although limited to one benchmark and modest in scope, these findings suggest that systematic fairness interventions are achievable without prohibitive performance trade-offs.
+A preliminary evaluation on \emph{canonical fairness benchmark datasets} indicates that selected FairLib pipelines can measurably reduce unfairness while leaving overall predictive accuracy broadly unchanged. Although limited to a modest set of benchmarks, these findings suggest that systematic fairness interventions are achievable without prohibitive performance trade-offs.
 
 By coupling a critical analysis of fairness concepts with a practical, extensible toolkit, this thesis aims to foster greater transparency and accountability in artificial-intelligence systems and to assist practitioners in deploying models that respect fundamental principles of equity.
 \end{abstract}
@@ -847,12 +847,9 @@ Figure \ref{fig:inprocessing_results} shows the Statistical Parity Difference (S
 \subsection{Discussion}
 The results demonstrate that the library's pre-processing and in-processing algorithms effectively reduce bias in classification tasks while maintaining competitive accuracy. The Statistical Parity Difference (SPD) and Disparate Impact (DI) metrics show significant improvements compared to the baseline model, indicating that the algorithms successfully mitigate disparities in outcomes across sensitive groups.
 
-%------------------------------------------------
+
 \section{Conclusion}
 This chapter has provided a comprehensive evaluation of the FairLib library, focusing on its usability, integration capabilities, and effectiveness in mitigating bias in machine learning models. The results demonstrate that FairLib offers a user-friendly interface for implementing fairness algorithms, with minimal code required to achieve significant improvements in fairness metrics. The library's design allows for seamless integration into existing machine learning workflows, making it a valuable tool for practitioners seeking to address algorithmic bias. The empirical results show that both pre-processing and in-processing algorithms can effectively reduce disparities in classification outcomes while maintaining competitive accuracy. The library's modular architecture and consistent interface make it easy to experiment with different fairness techniques, enabling users to tailor their approaches to specific datasets and fairness objectives.
-
-
-
 
 
 
