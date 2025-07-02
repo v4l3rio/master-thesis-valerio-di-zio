@@ -81,26 +81,22 @@ machine-learning (ML) pipeline, from data collection to model
 deployment, and because technical, legal, and ethical notions of
 “fair” often conflict in practice \cite{suresh2021framework}.
 
-\section{From Bias to Mitigation: Scope of This Report}
-\begin{enumerate}
-  \item \textbf{Diagnose the problem:}  
-  We survey the landscape of algorithmic unfairness, definitions of
-  fairness, sources of bias (representation, measurement, aggregation,
-  and historical), and the \textbf{feedback loops} that can entrench disparities.
-  We also review state-of-the-art mitigation strategies that operate at
-  three key stages of the ML lifecycle:
-  \emph{pre-processing} (data repair and re-weighting),
-  \emph{in-processing} (fairness-constrained learning), and
-  \emph{post-processing} (output adjustment).
+\section{Scope of This Report}
+\subsection{Diagnose the problem}
+We survey the landscape of algorithmic unfairness, definitions of
+fairness, sources of bias (representation, measurement, aggregation,
+and historical), and the \textbf{feedback loops} that can entrench disparities.
+We also review state-of-the-art mitigation strategies that operate at
+three key stages of the ML lifecycle:
+\emph{pre-processing} (data repair and re-weighting),
+\emph{in-processing} (fairness-constrained learning), and
+\emph{post-processing} (output adjustment).
 
-  \item \textbf{Offer a practical solution:}  
+\subsection{A practical solution}
 In this study we present \textbf{FairLib}, a modular Python library that consolidates a broad spectrum of fairness metrics and bias-mitigation algorithms within a single, production-oriented interface. By elevating bias detection, remediation, and continuous auditing to integral components of the machine-learning development lifecycle, FairLib significantly reduces the practical barriers to deploying equitable intelligent systems.
-\end{enumerate}
-\section{Why Another Library?  Limitations of the Status Quo}
-Although IBM’s \textit{AI Fairness 360} (AIF360) \cite{bellamy2019aif360} and Microsoft’s
-\textit{Fairlearn} \cite{bird2020fairlearn} have stimulated important research,
-they remain ill-suited for day-to-day engineering because they exhibit four
-persistent shortcomings:
+
+\section{Motivation for FairLib}
+Although the landscape now includes several fairness-oriented toolkits—such as Themis-ML, Fairness Indicators, and Google’s What-If Tool—this study focuses on IBM’s \textit{AI Fairness 360} (AIF360) \cite{bellamy2019aif360} and Microsoft’s \textit{Fairlearn} \cite{bird2020fairlearn}. These two libraries are among the most widely used and technically mature open-source solutions, offering extensive metric suites and diverse bias-mitigation algorithms. Precisely because of their popularity, richness, and maturity, they serve as realistic benchmarks for day-to-day engineering; yet, as we show below, they still suffer from four persistent shortcomings that motivate the development of \textbf{FairLib}.
 
 \begin{itemize}
   \item \textbf{Fragmented APIs and terminology:}  
@@ -241,8 +237,8 @@ Some of the most commonly used formal definitions include:
     
     \item \textbf{Equalized Odds:} Demands that, conditioned on the true outcome, both true positive and false positive rates are equal across groups \cite{hardt2016equalityopportunitysupervisedlearning}:
     \[ \begin{aligned}
-    P(\hat{Y} = 1 | Y = y, A = a) &= P(\hat{Y} = 1 | Y = y, A = b) \\
-    &\text{ for } y \in \{0, 1\} \text{ and all values } a, b \text{ of } A
+    P(\hat{Y} = 1 | Y = y, A = a) = P(\hat{Y} = 1 | Y = y, A = b) \\
+    \text{ for } y \in \{0, 1\} \text{ and all values } a, b \text{ of } A
     \end{aligned} \]
     This ensures that the algorithm's errors are distributed fairly across groups.
     
