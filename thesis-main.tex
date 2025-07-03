@@ -901,21 +901,21 @@ Figure \ref{fig:preprocessing_results} shows the Statistical Parity Difference (
 
 \begin{figure}
     \centering
-    \includegraphics[width=\textwidth]{figures/preprocessing_results/accuracy_comparison_chart.png}
+    \includegraphics[width=\textwidth]{figures/preprocessing_results/preprocessing_accuracy_comparison.png}
     \caption{Accuracy score for the baseline model and the models trained after applying pre-processing algorithms. The accuracy is computed on the test set of the Adult Income dataset.}
     \label{fig:baseline_results}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=\textwidth]{figures/preprocessing_results/spd_comparison_chart.png}
+    \includegraphics[width=\textwidth]{figures/preprocessing_results/preprocessing_spd_comparison.png}
     \caption{Statistical Parity Difference (SPD) for the baseline model and the models trained after applying pre-processing algorithms. The SPD is computed on the test set of the Adult Income dataset.}
     \label{fig:preprocessing_results}
 \end{figure}
 
 \begin{figure}
     \centering
-    \includegraphics[width=\textwidth]{figures/preprocessing_results/di_comparison_chart.png}
+    \includegraphics[width=\textwidth]{figures/preprocessing_results/preprocessing_di_comparison.png}
     \caption{Disparate Impact (DI) for the baseline model and the models trained after applying pre-processing algorithms. The DI is computed on the test set of the Adult Income dataset.}
     \label{fig:preprocessing_results_di}
 \end{figure}
@@ -927,10 +927,33 @@ From the results obtained by applying the algorithms in the pre-processing modul
 The results of applying in-processing algorithms to the Adult Income dataset are summarised in 3 figures. Figure \ref{fig:baseline_results_inprocessing} shows the accuracy of the baseline model and the models trained after applying in-processing algorithms. The accuracy is computed on the test set of the Adult Income dataset.
 Figure \ref{fig:inprocessing_results} shows the Statistical Parity Difference (SPD) for the baseline model and the models trained after applying in-processing algorithms. The SPD is computed on the test set of the Adult Income dataset. Figure \ref{fig:inprocessing_results_di} shows the Disparate Impact (DI) for the baseline model and the models trained after applying in-processing algorithms. The DI is computed on the test set of the Adult Income dataset.
 
-% here we use the same figures as in the pre-processing section, but with the results obtained by applying the in-processing algorithms. to be created...
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{figures/inprocessing_results/inprocessing_accuracy_comparison.png}
+    \caption{Accuracy score for the baseline model and the models trained after applying in-processing algorithms. The accuracy is computed on the test set of the Adult Income dataset.}
+    \label{fig:baseline_results_inprocessing}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{figures/inprocessing_results/inprocessing_spd_comparison.png}
+    \caption{Statistical Parity Difference (SPD) for the baseline model and the models trained after applying in-processing algorithms. The SPD is computed on the test set of the Adult Income dataset.}
+    \label{fig:inprocessing_results}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{figures/inprocessing_results/inprocessing_di_comparison.png}
+    \caption{Disparate Impact (DI) for the baseline model and the models trained after applying in-processing algorithms. The DI is computed on the test set of the Adult Income dataset.}
+    \label{fig:inprocessing_results_di}
+\end{figure}
+
+From the results obtained by applying the algorithms in the in-processing module, we observe that all algorithms successfully reduce the Statistical Parity Difference (SPD) and Disparate Impact (DI) metrics compared to the baseline model. 
 
 \subsection{Discussion}
-The results demonstrate that the library's pre-processing and in-processing algorithms effectively reduce bias in classification tasks while maintaining competitive accuracy. The Statistical Parity Difference (SPD) and Disparate Impact (DI) metrics show significant improvements compared to the baseline model, indicating that the algorithms successfully mitigate disparities in outcomes across sensitive groups.
+The experimental results confirm that both the pre-processing and in-processing algorithms implemented in the fairness-aware library are effective in mitigating bias in classification tasks while preserving competitive predictive performance. Specifically, the Statistical Parity Difference (SPD) and Disparate Impact (DI) metrics exhibit substantial improvements over the baseline model, demonstrating a marked reduction in outcome disparities between sensitive groups.
+
+The baseline classifier tends to overfit the inherent bias present in the data, frequently predicting the negative class (label 0) approximately 75\% of the time. This behavior amplifies existing disparities, as the model internalizes and replicates discriminatory patterns during training. In contrast, models trained with fairness constraints not only achieve a more balanced distribution of predicted classes — including a greater proportion of positive outcomes (accuracy) — but also exhibit improved fairness metrics. These results suggest that fairness-aware interventions can guide the learning process toward more equitable and accurate decision boundaries.
 
 
 \section{Conclusion}
