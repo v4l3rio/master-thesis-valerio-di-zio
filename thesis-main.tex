@@ -672,7 +672,14 @@ Fairness assessments and mitigation strategies depend critically on two orthogon
   \item \textbf{Metric facades.} Parameterless methods such as \texttt{disparate\_impact()} and \texttt{statistical\_parity\_difference()} automatically retrieve $y$ and $S$ from the stored descriptors and delegate the computation to standard routines defined in \texttt{metrics}.
 \end{enumerate}
 
-\subsection{Implementation} Each descriptor is implemented as a specialised \texttt{property} that manipulates \texttt{df.attrs}. Metric wrappers include validation logic and invoke the appropriate computational backend using the metadata declared on the frame.
+\subsection{Implementation} Each descriptor is implemented as a specialised \texttt{property} that manipulates \texttt{df.attrs}. Metric wrappers include validation logic and invoke the appropriate computational backend using the metadata declared on the frame. A summary diagram can be read in Figure \ref{fig:df-uml}.
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{figures/uml/dataframe.pdf}
+\caption{FairLib DataFrame Architecture}
+\label{fig:df-uml}
+\end{figure}
 
 \section{Fairness Metrics}
 
@@ -680,7 +687,14 @@ The \textit{metrics} module embodies a rigorously structured architectural strat
 
 The adoption of a dual-layer architecture is motivated by the heterogeneity of the intended user base and use cases. On the one hand, data scientists require efficient and portable computational primitives that integrate seamlessly with \texttt{NumPy}-centric analytical workflows. On the other hand, end-users and applied practitioners benefit from higher-level abstractions that interface intuitively with custom data containers. To this end, core metric functions such as \texttt{disparate\_impact}, \texttt{statistical\_parity\_difference}, and \texttt{equality\_of\_opportunity} are implemented as independent, framework-agnostic operations over \texttt{NumPy} arrays. These low-level primitives are encapsulated within class-based wrappers (\texttt{DisparateImpact}, \texttt{StatisticalParityDifference}, etc.), which inherit from a common \texttt{Metric} base class, thereby enabling polymorphic usage and seamless integration with the DataFrame abstraction layer.
 
-A particularly novel aspect of the design is the extension mechanism, which allows metric functionalities to be dynamically attached to \texttt{DataFrame} instances via a descriptor-based pattern, implemented through \texttt{DataFrameExtensionFunction}. In practice, this design allows users to invoke metrics via an object-oriented syntax (e.g., df.statistical\_parity\_difference()), which enhances discoverability and ease of use. This syntactic convenience significantly enhances the discoverability and accessibility of fairness evaluation tools, aligning with established paradigms in exploratory data analysis and interactive computing.
+A particularly novel aspect of the design is the extension mechanism, which allows metric functionalities to be dynamically attached to \texttt{DataFrame} instances via a descriptor-based pattern, implemented through \texttt{DataFrameExtensionFunction}. In practice, this design allows users to invoke metrics via an object-oriented syntax (e.g., df.statistical\_parity\_difference()), which enhances discoverability and ease of use. This syntactic convenience significantly enhances the discoverability and accessibility of fairness evaluation tools, aligning with established paradigms in exploratory data analysis and interactive computing. A summary diagram can be read in Figure \ref{fig:metrics-uml}.
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{figures/uml/metrics.pdf}
+\caption{FairLib Metrics Architecture}
+\label{fig:metrics-uml}
+\end{figure}
 
 The inherent multi-dimensionality of fairness evaluation outcomes necessitated the introduction of dedicated data structures. In particular, the \texttt{DomainDict} class provides a semantically rich mapping layer that supports flexible querying across sensitive attributes, prediction targets, and their value combinations. This enables domain-aware operations such as selective retrieval by attribute names, partial assignments, or intersectional groupings, which are essential for nuanced fairness analyses across diverse population strata.
 
@@ -730,7 +744,14 @@ The true positive rates are calculated as the ratio of correctly predicted posit
 \section{Pre-Processing Algorithms}
 The pre-processing module of FairLib implements a suite of algorithms designed to mitigate bias in datasets before model training. These algorithms transform the input data to reduce the influence of sensitive attributes, ensuring that subsequent learning processes are less affected by inherent biases.
 
-The preprocessing module uses a consistent interface architecture (inspired by scikit-learn) designed specifically to work with FairLib’s enhanced DataFrame structure. The core interface consists of three primary methods: \texttt{fit()}, \texttt{transform()}, and \texttt{fit\_transform()}. The \texttt{fit\_transform()} method serves as the primary interface that all preprocessing algorithms must implement, combining parameter learning and data transformation in a single operation. For algorithms requiring separate fitting and transformation phases, the \texttt{fit()} method learns parameters from the training data without modifying it, while \texttt{transform()} applies the learned transformation to new data. This separation enables efficient preprocessing of multiple datasets using the same learned parameters, which is particularly useful in train–test scenarios.
+The preprocessing module uses a consistent interface architecture (inspired by scikit-learn) designed specifically to work with FairLib’s enhanced DataFrame structure. The core interface consists of three primary methods: \texttt{fit()}, \texttt{transform()}, and \texttt{fit\_transform()}, see Figure \ref{fig:preprocessing-uml}. The \texttt{fit\_transform()} method serves as the primary interface that all preprocessing algorithms must implement, combining parameter learning and data transformation in a single operation. For algorithms requiring separate fitting and transformation phases, the \texttt{fit()} method learns parameters from the training data without modifying it, while \texttt{transform()} applies the learned transformation to new data. This separation enables efficient preprocessing of multiple datasets using the same learned parameters, which is particularly useful in train–test scenarios.
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{figures/uml/preprocessing.pdf}
+\caption{FairLib Pre-processing Algorithms Architecture}
+\label{fig:preprocessing-uml}
+\end{figure}
 
 All methods are designed to work exclusively with FairLib’s custom DataFrame, which extends the standard pandas DataFrame by preserving metadata for target and sensitive attributes. In particular, the DataFrame’s \texttt{unpack()} method automatically extracts the feature matrix, target labels, and sensitive attribute indices, while built-in validation ensures consistent data structure across algorithms.
 
@@ -748,7 +769,7 @@ The Learning Fair Representations (LFR) algorithm is implemented as a deep neura
 
 \begin{figure}
 \centering
-\includegraphics[width=\textwidth]{figures/lfr_architecture.png}
+\includegraphics[width=\textwidth]{figures/lfr.pdf}
 \caption{Architecture of the Learning Fair Representations (LFR) algorithm. The encoder compresses input features into a fair representation and the classifier predicts the target label from the fair representation \cite{TayebiAidaLfr}.}
 \label{fig:lfr_architecture}
 \end{figure}
@@ -775,7 +796,14 @@ Here $\lambda$ is the repair level parameter that controls the trade-off between
 This approach makes the marginal distributions of each feature much more similar across different demographic groups, thereby reducing disparate impact, while still preserving some of the original data characteristics. The repair level $\lambda$ allows practitioners to balance between achieving complete distributional fairness ($\lambda = 1$, using only the median-aligned value) and preserving the original feature values ($\lambda = 0$, no adjustment). Additionally, the implementation preserves metadata consistency by keeping the same column names and retaining sensitive attribute information in the transformed DataFrame.
 
 \section{In-Processing Algorithms}
-The in-processing module of FairLib implements advanced fairness-aware machine learning algorithms by integrating fairness constraints directly into model training. This approach enables the simultaneous optimization of predictive accuracy and fairness objectives, allowing practitioners to achieve better trade-offs between these often competing goals. The implementation follows a modular design pattern, and all algorithms inherit from a common \texttt{Processor} base class that defines standard \texttt{fit()} and \texttt{predict()} methods. This abstraction ensures a consistent interface across different fairness algorithms and compatibility with FairLib’s DataFrame-based data handling system, making it easy to interchange in-processing mitigation methods within the library.
+The in-processing module of FairLib implements advanced fairness-aware machine learning algorithms by integrating fairness constraints directly into model training. This approach enables the simultaneous optimization of predictive accuracy and fairness objectives, allowing practitioners to achieve better trade-offs between these often competing goals. The implementation follows a modular design pattern, and all algorithms inherit from a common \texttt{Processor} base class that defines standard \texttt{fit()} and \texttt{predict()} methods. This abstraction ensures a consistent interface across different fairness algorithms and compatibility with FairLib’s DataFrame-based data handling system, making it easy to interchange in-processing mitigation methods within the library. A summary diagram can be read in Figure \ref{fig:inprocessing-uml}.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{figures/uml/inprocessing.pdf}
+    \caption{FairLib In-processing Algorithms Architecture}
+    \label{fig:inprocessing-uml}
+\end{figure}
 
 \subsection{Adversarial Debiasing}
 Building on the original Adversarial Debiasing framework of \cite{zhang2018mitigatingunwantedbiasesadversarial}, we adopt the architectural refinement proposed by \cite{beutel2017datadecisionstheoreticalimplications} in which the \emph{adversary consumes an intermediate hidden representation} rather than the predictor’s final logits.  This shift from an \textit{output-based} to a \textit{representation-based} adversarial signal encourages the predictor to remove sensitive information \emph{earlier} in the network and has been shown to yield stronger fairness guarantees while retaining predictive power.
@@ -953,7 +981,7 @@ From the results obtained by applying the algorithms in the in-processing module
 \subsection{Discussion}
 The experimental results confirm that both the pre-processing and in-processing algorithms implemented in the fairness-aware library are effective in mitigating bias in classification tasks while preserving competitive predictive performance. Specifically, the Statistical Parity Difference (SPD) and Disparate Impact (DI) metrics exhibit substantial improvements over the baseline model, demonstrating a marked reduction in outcome disparities between sensitive groups.
 
-The baseline classifier tends to overfit the inherent bias present in the data, frequently predicting the negative class (label 0) approximately 75\% of the time. This behavior amplifies existing disparities, as the model internalizes and replicates discriminatory patterns during training. In contrast, models trained with fairness constraints not only achieve a more balanced distribution of predicted classes — including a greater proportion of positive outcomes (accuracy) — but also exhibit improved fairness metrics. These results suggest that fairness-aware interventions can guide the learning process toward more equitable and accurate decision boundaries.
+In the in-processing experiments, the baseline classifier tends to overfit the inherent bias present in the data, frequently predicting the negative class (label 0) approximately 75\% of the time. This behavior amplifies existing disparities, as the model internalizes and replicates discriminatory patterns during training. In contrast, models trained with fairness constraints not only achieve a more balanced distribution of predicted classes — including a greater proportion of positive outcomes (accuracy) — but also exhibit improved fairness metrics. These results suggest that fairness-aware interventions can guide the learning process toward more equitable and accurate decision boundaries.
 
 
 \section{Conclusion}
