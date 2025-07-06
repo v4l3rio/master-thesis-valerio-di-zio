@@ -135,23 +135,18 @@ corresponding limitation identified above:
   removing the need for brittle integration code.
 
   \item \textbf{Reducing verbosity and complexity:}  
-  Group- and individual-level metrics share a vectorised NumPy core, so
-  computing a metric or launching a debiasing routine becomes a one-liner,
-  dramatically accelerating prototyping.
+  Fairness metrics—and the accompanying debiasing routines—can be used in only a handful of lines, streamlining rapid prototyping.
 
   \item \textbf{Extending beyond binary settings:}  
   All fairness metrics and evaluation utilities natively support multi-class targets and both binary and categorical sensitive attributes, while debiasing algorithms offer varying levels of support for multi-class settings together addressing key gaps in existing fairness libraries.
 
   \item \textbf{Providing end-to-end debiasing:}  
-  Harmonised \emph{pre-} and \emph{in-processing} modules (with
-  post-processing on the roadmap) let practitioners inject fairness at the
-  point most compatible with data-governance and privacy constraints.
+  Harmonised \emph{pre-} and \emph{in-processing} modules let practitioners inject fairness at the point most compatible with data-governance and privacy constraints.
 
   \item \textbf{Enabling customisable trade-offs and models:}  
-  Every mitigation algorithm surfaces its fairness penalty as a hyperparameter and accepts a user-supplied estimator, which can range from linear models to bespoke neural networks, thereby supporting automatic exploration of the fairness–utility frontier without sacrificing architectural flexibility.
+  Every mitigation algorithm surfaces its fairness penalty as a hyperparameter and accepts a user-supplied estimator, thereby supporting automatic exploration of the fairness–utility frontier without sacrificing architectural flexibility.
 
-  \item \textbf{Ensuring seamless workflow integration:}  
-  Native PyTorch wrappers and drop-in scikit-learn compatibility allow FairLib components to slot directly into production notebooks, model registries, and CI/CD pipelines, overcoming the rigid, “model-locked” designs of prior toolkits.
+  \item \textbf{Easier integration into existing workflows:} Native PyTorch wrappers and drop-in scikit-learn compatibility make FairLib straightforward to adopt within established machine-learning pipelines, allowing the library to be applied with minimal effort.
 \end{itemize}
 
 
@@ -230,25 +225,42 @@ One of the central challenges in developing fair AI systems is that there is no 
 
 Some of the most commonly used formal definitions include:
 
+%--- Notation --------------------------------------------------------------
+\noindent\textbf{Notation.}  
+$A$ denotes a protected attribute (e.g., gender, race, age) with generic values $a$ and $b$ under comparison;  
+$Y$ is the ground-truth outcome label ($Y=1$ indicates the positive class); and  
+$\hat{Y}$ is the model’s predicted label.
+
+%---------------------------------------------------------------------------
 \begin{itemize}
-    \item \textbf{Demographic Parity:} Requires that the probability of a positive outcome is the same across all groups, regardless of protected attributes. Mathematically, for a decision $\hat{Y}$ and a protected attribute $A$:
-    \[ P(\hat{Y} = 1 | A = a) = P(\hat{Y} = 1 | A = b) \text{ for all values } a, b \text{ of } A \]
-    This definition aims for equal representation but may not be appropriate when the base rates genuinely differ across groups.
-    
-    \item \textbf{Equalized Odds:} Demands that, conditioned on the true outcome, both true positive and false positive rates are equal across groups \cite{hardt2016equalityopportunitysupervisedlearning}:
-    \[ \begin{aligned}
-    P(\hat{Y} = 1 | Y = y, A = a) = P(\hat{Y} = 1 | Y = y, A = b) \\
-    \text{ for } y \in \{0, 1\} \text{ and all values } a, b \text{ of } A
-    \end{aligned} \]
-    This ensures that the algorithm's errors are distributed fairly across groups.
-    
-    \item \textbf{Equal Opportunity:} A relaxation of equalized odds that focuses solely on ensuring that individuals who truly belong to the positive class have an equal chance of being correctly classified:
-    \[ P(\hat{Y} = 1 | Y = 1, A = a) = P(\hat{Y} = 1 | Y = 1, A = b) \text{ for all values } a, b \text{ of } A \]
-    This is particularly relevant in contexts like hiring, where we want qualified candidates to have equal chances regardless of their demographic group.
-    
-    \item \textbf{Predictive Parity:} Requires that the precision of the classifier is the same across all groups:
-    \[ P(Y = 1 | \hat{Y} = 1, A = a) = P(Y = 1 | \hat{Y} = 1, A = b) \text{ for all values } a, b \text{ of } A \]
-    This ensures that a positive prediction has the same meaning regardless of group membership.
+  \item \textbf{Demographic Parity:}  
+  The probability of a positive prediction must be the same across groups, irrespective of the protected attribute:
+  \[
+    P(\hat{Y}=1 \mid A=a) = P(\hat{Y}=1 \mid A=b).
+  \]
+  This criterion seeks equal representation but can be inappropriate when base rates legitimately differ between groups.
+
+  \item \textbf{Equalized Odds:}  
+  Conditioned on the true outcome, both the true–positive and false–positive rates must be equal across groups \cite{hardt2016equalityopportunitysupervisedlearning}:
+  \[
+    P(\hat{Y}=1 \mid Y=y, A=a) = P(\hat{Y}=1 \mid Y=y, A=b)
+    \quad\text{for } y\in\{0,1\}.
+  \]
+  Thus, the model’s errors are distributed fairly.
+
+  \item \textbf{Equal Opportunity:}  
+  A relaxation of Equalized Odds that focuses only on the true-positive rate:
+  \[
+    P(\hat{Y}=1 \mid Y=1, A=a) = P(\hat{Y}=1 \mid Y=1, A=b).
+  \]
+  This is particularly relevant in settings like hiring, where qualified candidates ($Y=1$) should have equal chances regardless of group.
+
+  \item \textbf{Predictive Parity:}  
+  The precision of the classifier must be the same across groups:
+  \[
+    P(Y=1 \mid \hat{Y}=1, A=a) = P(Y=1 \mid \hat{Y}=1, A=b).
+  \]
+  This guarantees that a positive prediction has the same meaning for every group.
 \end{itemize}
 
 Importantly, these definitions can conflict with each other \cite{kusner2017counterfactual}. This creates inherent trade-offs that must be navigated based on the specific context and ethical priorities.
@@ -265,11 +277,11 @@ Beyond accuracy, fairness may also trade off against:
 \begin{itemize}
     \item \textbf{Interpretability:} More complex models that incorporate fairness constraints may be harder to interpret, reducing transparency and making it difficult to identify sources of bias;
     
-    \item \textbf{Computational Efficiency:} Many fairness-aware algorithms require additional computational resources for training and inference, potentially limiting their applicability in resource-constrained environments;
+    \item \textbf{Computational Efficiency:} Many fairness-aware algorithms require additional computational resources for training and inference, potentially limiting their applicability in resource-constrained environments.
     
-    \item \textbf{Privacy:} Ensuring fairness often requires collecting and analyzing sensitive demographic data, which may conflict with privacy objectives or regulations like GDPR;
+    \item \textbf{Privacy:} Ensuring fairness often requires collecting and analyzing sensitive demographic data, which may conflict with privacy objectives or regulations like GDPR.
     
-    \item \textbf{Individual Utility:} Group fairness measures may sometimes reduce utility for specific individuals who would have received positive outcomes under an unfair but more accurate model;
+    \item \textbf{Individual Utility:} Group fairness measures may sometimes reduce utility for specific individuals who would have received positive outcomes under an unfair but more accurate model.
     
     \item \textbf{Short-term vs. Long-term Fairness:} Interventions that promote fairness in the short term may have unintended consequences that reduce fairness in the long term, or vice versa.
 \end{itemize}
@@ -357,28 +369,32 @@ The state-of-the-art in algorithmic fairness is built upon several foundational 
 \subsection{Fairness Metrics}
 Fairness metrics are essential for quantifying bias in machine learning models. They provide a means to evaluate how well a model adheres to various fairness definitions, enabling practitioners to identify and address potential disparities. Commonly used metrics include:
 
-\subsubsection{Statistical Parity Difference (SPD)} 
+\subsubsection{Statistical Parity Difference (SPD)}
 Measures whether positive prediction rates are balanced across different demographic groups. Formally:
 \begin{equation}
     \text{SPD} = P(\hat{Y}=1 \mid A=a) - P(\hat{Y}=1 \mid A=b)
+    \label{spdcap2}
 \end{equation}
-
+In this formula \ref{spdcap2}, $A$ denotes a protected attribute (e.g., gender, race, age) with categories $a$ and $b$ under comparison, and $Y$ is the ground-truth outcome label ($Y=1$ indicates the positive class).  
 A value close to 0 indicates that the model assigns positive outcomes at equal rates to both groups. SPD is useful for detecting allocative bias—whether one group is favored in outcome distribution \cite{dwork2011fairnessawareness}.
 
-\subsubsection{Disparate Impact (DI)} 
+\subsubsection{Disparate Impact (DI)}
 Quantifies the ratio of positive prediction rates between different demographic groups.
 \begin{equation}
     \text{DI} = \frac{P(\hat{Y}=1 \mid A=a)}{P(\hat{Y}=1 \mid A=b)}
+    \label{dicap2}
 \end{equation}
-Values below 0.8 (or above 1.20) are typically seen as indicative of potential disparate impact, according to the 80\% rule. DI is widely used in legal and regulatory contexts as a clear and interpretable indicator \cite{feldman2015certifyingremovingdisparateimpact}.
+In this formula \ref{dicap2}, $A$ denotes a protected attribute (e.g., gender, race, age) with categories $a$ and $b$ under comparison, and $Y$ is the ground-truth outcome label ($Y=1$ indicates the positive class).  
+Values below 0.8 are typically seen as indicative of potential disparate impact, according to the 80\% rule. DI is widely used in legal and regulatory contexts as a clear and interpretable indicator \cite{feldman2015certifyingremovingdisparateimpact}.
 
-\subsubsection{Equal Opportunity Difference} 
+\subsubsection{Equal Opportunity Difference (EOD)}
 Evaluates whether true positive rates are equal across protected groups.
 \begin{equation}
     \text{EOD} = P(\hat{Y}=1 \mid Y=1, A=a) - P(\hat{Y}=1 \mid Y=1, A=b)
+    \label{eodcap2}
 \end{equation}
-A value near 0 implies that among the individuals who should receive a positive outcome (\begin{math}
-{Y=1} \end{math}), each group is equally likely to be correctly identified. EOD is crucial for ensuring equal quality of service \cite{hardt2016equalityopportunitysupervisedlearning}.
+In this formula \ref{eodcap2}, $A$ denotes a protected attribute (e.g., gender, race, age) with categories $a$ and $b$ under comparison, and $Y$ represents the ground-truth outcome label ($Y=1$ for the positive class).  
+A value near 0 implies that among the individuals who should receive a positive outcome ($Y=1$), each group is equally likely to be correctly identified. EOD is crucial for ensuring equal quality of service \cite{hardt2016equalityopportunitysupervisedlearning}.
 
 
 \subsection{Pre-processing methods} 
@@ -713,7 +729,7 @@ Statistical Parity Difference represents a fundamental group fairness metric tha
 
 Mathematically, Statistical Parity Difference is formulated as:
 \begin{equation}
-\text{SPD} = P(\hat{Y}=1|S=\text{privileged}) - P(\hat{Y}=1|S=\text{unprivileged})
+\text{SPD} = P(\hat{Y}=1|S=\text{unprivileged}) - P(\hat{Y}=1|S=\text{privileged})
 \end{equation}
 where $\hat{Y}$ denotes the predicted outcome, $S$ represents the sensitive attribute, and the probabilities are computed over the respective demographic subgroups.
 
@@ -921,7 +937,7 @@ The evaluation protocol, for \textbf{pre-processing algorithms}, consists of the
 For \textbf{in-processing algorithms}, the evaluation protocol consists of:
 \begin{enumerate}
     \item Compute fairness metrics (Statistical Parity Difference, Disparate Impact) on the original dataset.
-    \item Train a classifier (logistic regression) with in-processing algorithms (Adversarial Debiasing, FaUCI, Prejudice Remover) integrated into the training loop.
+    \item Train a classifier (Neural Network) with in-processing algorithms (Adversarial Debiasing, FaUCI, Prejudice Remover) integrated into the training loop.
     \item Compute fairness metrics on the test set after training with in-processing algorithms.
 \end{enumerate}
 
