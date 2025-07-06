@@ -16,7 +16,7 @@
 \cosupervisor{Prof. Andrea Omicini}
 \morecosupervisor{Prof.ssa Roberta Calegari}
 \session{I}
-\academicyear{2025-2026}
+\academicyear{2024-2025}
 
 
 \mainlinespacing{1.241} % line spacing in mainmatter, comment to default (1)
@@ -370,7 +370,7 @@ Quantifies the ratio of positive prediction rates between different demographic 
 \begin{equation}
     \text{DI} = \frac{P(\hat{Y}=1 \mid A=a)}{P(\hat{Y}=1 \mid A=b)}
 \end{equation}
-Values below 0.8 (or above 1.25) are typically seen as indicative of potential disparate impact, according to the 80\% rule. DI is widely used in legal and regulatory contexts as a clear and interpretable indicator \cite{feldman2015certifyingremovingdisparateimpact}.
+Values below 0.8 (or above 1.20) are typically seen as indicative of potential disparate impact, according to the 80\% rule. DI is widely used in legal and regulatory contexts as a clear and interpretable indicator \cite{feldman2015certifyingremovingdisparateimpact}.
 
 \subsubsection{Equal Opportunity Difference} 
 Evaluates whether true positive rates are equal across protected groups.
@@ -417,13 +417,17 @@ The formal transformation applies quantile mapping using \textbf{Cumulative Dist
 where \begin{math} F_{x | A} \end{math} is the \textbf{CDF} of the feature within group A, and \begin{math}F^{-1}\end{math} is the global inverse \textbf{CDF}. The parameter \begin{math} \alpha \in [0, 1] \end{math}controls how strongly features are adjusted.
 This technique reduces disparate impact by making feature distributions more similar across groups \cite{feldman2015certifyingremovingdisparateimpact}.
 
-\subsubsection{Reweighing} Modifies the importance of each training sample based on how frequent its label-group combination is. The goal is to simulate a balanced dataset where the label distribution is independent of group membership.
-Each sample with label y and group a receives weight:
-\begin{equation}
-    w(y, a) = \frac{P(Y = y)}{P(Y = y \mid A = a)}
-\end{equation}
-This rebalancing ensures that minority or underrepresented combinations receive more influence during training, encouraging models to make fairer decisions \cite{8907b030dc7644cabfab035645f9b9da}.
+\subsubsection{Reweighing}
+Reweighing rescales every training instance so that, in expectation, the protected attribute $A$ and the class label $Y$ become independent.  
+For each combination of outcome $y$ and group $a$, the weight defined by Kamiran \& Calders is  
 
+\begin{equation}
+    w(y,a)=\frac{P(Y=y)\,P(A=a)}{P(Y=y,A=a)},
+\end{equation}
+
+where all probabilities are estimated from the original dataset.  
+If the joint event $(Y{=}y,A{=}a)$ occurs less often than would be expected under independence, $w(y,a)\!>\!1$ and the instance is up-weighted; otherwise it is down-weighted.  
+Applying these weights yields a rebalanced sample in which the empirical joint distribution satisfies $P_w(Y=y,A=a)=P(Y=y)P(A=a)$, thereby removing correlation between $A$ and $Y$ and encouraging fairer learning \cite{8907b030dc7644cabfab035645f9b9da}.
 
 \subsection{In-processing methods} 
 An In-processing algorithm modifies the learning algorithm to incorporate fairness constraints during model training. These methods can be more effective than pre-processing, as they directly influence the model's decision-making process. Common in-processing techniques include:
@@ -717,7 +721,7 @@ The implementation in FairLib follows a dual-layer architectural pattern, provid
 
 \subsection{Disparate Impact}
 
-Disparate Impact constitutes a ratio-based fairness metric that emerged from legal frameworks, particularly the "80\% rule" established in US anti-discrimination jurisprudence. This metric addresses the detection of indirect discrimination by measuring the relative likelihood of favorable outcomes between demographic groups, providing a multiplicative rather than additive perspective on fairness violations.
+Disparate Impact constitutes a ratio-based fairness metric that emerged from legal frameworks, particularly the ``80\% rule" established in US anti-discrimination jurisprudence. This metric addresses the detection of indirect discrimination by measuring the relative likelihood of favorable outcomes between demographic groups, providing a multiplicative rather than additive perspective on fairness violations.
 
 The mathematical formulation of Disparate Impact is expressed as:
 \begin{equation}
@@ -981,7 +985,7 @@ From the results obtained by applying the algorithms in the in-processing module
 \subsection{Discussion}
 The experimental results confirm that both the pre-processing and in-processing algorithms implemented in the fairness-aware library are effective in mitigating bias in classification tasks while preserving competitive predictive performance. Specifically, the Statistical Parity Difference (SPD) and Disparate Impact (DI) metrics exhibit substantial improvements over the baseline model, demonstrating a marked reduction in outcome disparities between sensitive groups.
 
-In the in-processing experiments, the baseline classifier tends to overfit the inherent bias present in the data, frequently predicting the negative class (label 0) approximately 75\% of the time. This behavior amplifies existing disparities, as the model internalizes and replicates discriminatory patterns during training. In contrast, models trained with fairness constraints not only achieve a more balanced distribution of predicted classes — including a greater proportion of positive outcomes (accuracy) — but also exhibit improved fairness metrics. These results suggest that fairness-aware interventions can guide the learning process toward more equitable and accurate decision boundaries.
+In the in-processing experiments, the baseline classifier largely mirrors the class imbalance present in the training data: because roughly 75\% of the training instances belong to the negative class (label 0), the model predicts that outcome at a similar rate. In contrast, models trained with fairness constraints not only achieve a more balanced distribution of predicted classes — including a greater proportion of positive outcomes (accuracy) — but also exhibit improved fairness metrics. These results suggest that fairness-aware interventions can guide the learning process toward more equitable and accurate decision boundaries.
 
 
 \section{Conclusion}
@@ -1004,18 +1008,18 @@ This chapter has provided a comprehensive evaluation of the FairLib library, foc
 \begin{acknowledgements} % this is optional
 
 Un sentito grazie al \textbf{Prof.\ Giovanni Ciatto} per la disponibilità e i preziosi consigli che hanno arricchito il mio percorso accademico.  
-Grazie per il clima accogliente nell’Area ``4.0'' e per tutto il supporto alla realizzazione di questo lavoro.
+Grazie per il clima accogliente nell’Area 4.0 e per tutto il supporto alla realizzazione di questo lavoro.
 \\
 Un ringraziamento speciale va alla \textbf{mia famiglia} per il loro sostegno incondizionato e per aver sempre creduto in me,  
 supportandomi nei momenti di gioia e di difficoltà e appoggiando ogni mia scelta senza mai dubitare di me.
 \\
 Grazie, \textbf{Margherita}, per avermi supportato e sopportato in ogni momento,  
-per esserti presa cura di me nei momenti difficili e per aver festeggiato con me ogni traguardo. Grazie.
+per esserti presa cura di me nei momenti difficili e per aver festeggiato con me ogni traguardo.
 \\
 Grazie ai miei amici, compagni di viaggio e di avventure, per aver condiviso con me gioie e difficoltà  
 e per aver reso ogni giornata più leggera. \textit{In particolare:}
 \\
-\textbf{Giovanni Antonioni}, grazie! Il tuo aiuto, il tuo supporto e la pizza patate e salsiccia  
+\textbf{Giovanni Antonioni}, grazie! Il tuo aiuto, la tua precisione nei progetti e la pizza patate e salsiccia  
 sono stati elementi fondamentali in questo percorso.
 \\
 \textbf{Luca Rubboli}, grazie! I consigli, i progetti fatti insieme e le grigliate in piscina  
