@@ -500,7 +500,7 @@ y\,\sigma(\mathbf{x}^{\top}\mathbf{w}_{s})+
 \end{equation}
 
 \noindent
-Each sensitive state \(s\in\mathcal{S}\) has its own weight vector \(\mathbf{w}_{s}\).  The sigmoid \(\sigma\) turns the linear score into a probability, ensuring that the overall objective stays differentiable for gradient optimisation.
+Each sensitive state \(s\in\mathcal{S}\) has its own weight vector \(\mathbf{w}_{s}\).  The sigmoid \(\sigma\) turns the linear score into a probability, ensuring that the overall objective stays differentiable for gradient optimization.
 
 %-------------------------------------------------
 % (11) Prejudice-remover regulariser
@@ -553,7 +553,7 @@ Fairness is imposed by the $\tau$-rule
 \[
 \rho_q(f):=\min_{i\in[p]}q_i(f)/\max_{j\in[p]}q_j(f)\;\ge\;\tau,
 \] \cite{celis2020classificationfairnessconstraintsmetaalgorithm}.
-leading to the constrained optimisation
+leading to the constrained optimization
 \[
 \begin{aligned}
 \min_{f\in\mathcal{F}}\;&\Pr[f\neq Y]\\
@@ -588,7 +588,7 @@ f_{\boldsymbol\lambda}(x)=\mathbb{I}\bigl[s_{\boldsymbol\lambda}(x)>0\bigr],
 \]
 where $\pi^{(i)}_j=\Pr[G_i,A^{(i)}_j]$ and $\eta^{(i)}_j(x)=\Pr[G_i,A^{(i)}_j\mid X=x]$.
 
-\paragraph{Dual convex optimisation.}
+\paragraph{Dual convex optimization.}
 Optimal multipliers $\boldsymbol\lambda^\star$ are obtained from the convex program \cite{celis2020classificationfairnessconstraintsmetaalgorithm}
 \[
 \boldsymbol\lambda^\star=\arg\min_{\boldsymbol\lambda\in\mathbb{R}^p}
@@ -716,7 +716,7 @@ A particularly novel aspect of the design is the extension mechanism, which allo
 \label{fig:metrics-uml}
 \end{figure}
 
-The inherent multi-dimensionality of fairness evaluation outcomes necessitated the introduction of dedicated data structures. In particular, the \texttt{DomainDict} class provides a semantically rich mapping layer that supports flexible querying across sensitive attributes, prediction targets, and their value combinations. This enables domain-aware operations such as selective retrieval by attribute names, partial assignments, or intersectional groupings, which are essential for nuanced fairness analyses across diverse population strata.
+The inherent multi-dimensionality of fairness evaluation outcomes necessitated the introduction of dedicated data structures. In particular, the \texttt{DomainDict} class provides a semantically rich mapping layer that supports flexible querying across sensitive attributes, prediction targets, and their value combinations. This enables domain-aware operations such as selective retrieval by attribute names, partial assignments, or intersectional groupings, which are essential for nuanced fairness analyzes across diverse population strata.
 
 Robust input validation and exception handling are implemented as first-class concerns within the library. The \texttt{check\_and\_setup} utility performs comprehensive precondition checks to ensure the dimensional alignment of sensitive attributes and outcome variables, issuing informative warnings in edge cases such as low group cardinality or missing categories. Furthermore, boundary conditions—such as metrics computed on empty demographic groups—are gracefully handled using \texttt{NaN} or infinite values, preserving the semantic consistency of results while avoiding runtime interruptions.
 
@@ -852,11 +852,11 @@ The \textbf{FaUCI} (Fairness Under Constrained Injection) algorithm incorporates
 where $w$ is the regularization weight that controls the trade-off between accuracy and fairness. The fairness penalty leverages a pluggable metric system (implemented in \texttt{\_torch\_metrics.py}) supporting metrics such as Statistical Parity Difference (SPD) and Disparate Impact (DI). These metrics are computed on each mini-batch during training to provide an on-the-fly estimate of unfairness. For example, the SPD metric is calculated as the absolute difference in positive outcome probability between the protected and unprotected groups, while the DI metric is the ratio of these probabilities. Both metrics are efficiently computed using the model’s predictions for the current mini-batch, with a small epsilon (e.g. $10^{-7}$) added to probability estimates to ensure numerical stability (avoiding division by zero or undefined log values). The \texttt{FaUCI} class serves as the main processor for this algorithm, wrapping an arbitrary PyTorch model and managing the training loop via a flexible interface. It allows users to specify custom optimizers, base loss functions, and fairness metrics (along with the regularization weight $w$). During training, the sensitive attribute values for each batch are passed into the loss computation (via a property injection mechanism) so that the fairness metric can be evaluated for that batch’s predictions. The implementation supports a range of hyperparameters including the number of epochs, batch size, and the regularization weight $w$, making FaUCI a versatile framework for exploring different fairness–accuracy trade-offs.
 
 \subsection{Prejudice Remover}
-The Prejudice Remover algorithm is implemented via a mutual-information-based regularization framework, which explicitly penalizes the model for encoding statistical dependence between its predictions and the sensitive attribute. The core of this approach is a \texttt{PrejudiceRemoverLoss} that augments the standard prediction loss with a mutual information (MI) penalty term:
+The Prejudice Remover algorithm is implemented via a mutual-information-based regularization framework, which explicitly penalizes the model for encoding statistical dependence between its predictions and the sensitive attribute. The core of this approach is a \texttt{PrejudiceRemoverLoss} that augments the standard prediction loss with a mutual information ($MI$) penalty term:
 \begin{equation}
     L_{\text{total}} = L_{\text{base}} \;+\; \eta \cdot MI(\hat{Y}, S)\,
 \end{equation}
-where $\eta$ is a hyperparameter controlling the strength of the fairness regularization. Here $MI(\hat{Y}, S)$ measures the mutual information between the model’s output $\hat{Y}$ and the sensitive attribute $S$, which is zero if the predictions are independent of $S$. In practice, this mutual information is estimated on each mini-batch by computing the joint distribution $P(\hat{Y}, S)$ and the marginal distributions $P(\hat{Y})$ and $P(S)$ from the batch’s predictions and labels. The implementation calculates group-conditional probabilities (such as $P(\hat{Y}=1 \mid S=0)$ and $P(\hat{Y}=1 \mid S=1)$) by averaging the model’s predicted probabilities for the positive class within each sensitive group in the batch. Using these, it obtains estimates of $P(\hat{Y}=1, S=0)$, $P(\hat{Y}=1, S=1)$, etc., for all four combinations of binary outcome and sensitive value. To prevent numerical issues (e.g. $\log(0)$), a small epsilon ($10^{-8}$) is added to each probability estimate. The mutual information penalty is then computed as the Kullback–Leibler divergence between the joint and product-of-marginals distributions:
+where $\eta$ is a hyperparameter controlling the strength of the fairness regularization. Here $MI(\hat{Y}, S)$ measures the mutual information between the model’s output $\hat{Y}$ and the sensitive attribute $S$, which is zero if the predictions are independent of $S$. In practice, this mutual information is estimated on each mini-batch by computing the joint distribution $P(\hat{Y}, S)$ and the marginal distributions $P(\hat{Y})$ and $P(S)$ from the batch’s predictions and labels. The implementation calculates group-conditional probabilities (such as $P(\hat{Y}=1 \mid S=0)$ and $P(\hat{Y}=1 \mid S=1)$) by averaging the model’s predicted probabilities for the positive class within each sensitive group in the batch. Using these, it obtains estimates of $P(\hat{Y}=1, S=0)$, $P(\hat{Y}=1, S=1)$, etc., for all four combinations of binary outcome and sensitive value. To prevent numerical issues (e.g. $\log(0)$), a small epsilon ($10^{-8}$) is added to each probability estimate. The mutual information penalty is then computed as the \textbf{Kullback–Leibler} divergence between the joint and product-of-marginals distributions:
 \begin{equation}
     MI(\hat{Y}, S) \;\approx\; \sum_{y\in\{0,1\}} \sum_{s\in\{0,1\}} P(\hat{Y}=y,\;S=s)\; \log \frac{P(\hat{Y}=y,\;S=s)}{\,P(\hat{Y}=y)\,P(S=s)\,}\,
 \end{equation}
@@ -865,7 +865,7 @@ which corresponds to summing over the four possible $(y, s)$ combinations in the
 \chapter{Evaluation and Results}
 
 
-This chapter presents an empirical evaluation of the proposed Python library for algorithmic fairness. We analyse its behaviour along four complementary axes: \emph{verbosity of the API}, \emph{ease of use}, \emph{seamless integration within existing machine--learning pipelines}, and \emph{quantitative impact on fairness metrics}. The goal is to provide a comprehensive view of the trade--offs introduced by the library and to validate its practical utility.
+This chapter presents an empirical evaluation of the proposed Python library for algorithmic fairness. We analyze its behaviour along four complementary axes: \emph{verbosity of the API}, \emph{ease of use}, \emph{seamless integration within existing machine--learning pipelines}, and \emph{quantitative impact on fairness metrics}. The goal is to provide a comprehensive view of the trade--offs introduced by the library and to validate its practical utility.
 
 
 \section{Verbosity Analysis}
@@ -897,7 +897,7 @@ The example shows how to instantiate the Adversarial Debiasing processor, fit it
 
 
 \section{Integration into Existing Pipelines}
-This section explores how the library can be embedded into pre--existing scikit--learn\,/\,PyTorch pipelines with minimal refactoring. We discuss interoperability with data preprocessing stages, hyperparameter optimisation loops, and model persistence mechanisms.
+This section explores how the library can be embedded into pre--existing scikit--learn\,/\,PyTorch pipelines with minimal refactoring. We discuss interoperability with data preprocessing stages, hyperparameter optimization loops, and model persistence mechanisms.
 
 \subsection{Preprocessing Integration}
 The library's preprocessing algorithms can be seamlessly integrated into existing data pipelines. The code snippet \ref{lst:unfair_preprocessing} shows a basic example of binary classification, without the application of any fairness algorithms.
