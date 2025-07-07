@@ -15,7 +15,7 @@
 \supervisor{Prof. Giovanni Ciatto}
 \cosupervisor{Prof. Andrea Omicini}
 \morecosupervisor{Prof.ssa Roberta Calegari}
-\session{I}
+\session{Luglio 2025}
 \academicyear{2024-2025}
 
 
@@ -46,7 +46,7 @@
 \frontmatter\frontispiece
 
 \begin{abstract}	
-Automated decision-making systems are rapidly permeating socially sensitive domains such as finance, healthcare, justice, and autonomous mobility.  While these data-driven solutions can increase efficiency, they can also perpetuate or amplify existing inequities whenever the underlying algorithms exhibit unfair behaviour.  This thesis provides a systematic investigation of algorithmic fairness, clarifying the multiple, often competing, formal definitions of fairness adopted in the literature and mapping them to the practical risks of bias and discrimination that arise throughout the machine-learning pipeline.
+Automated decision-making systems are rapidly permeating socially sensitive domains such as finance, healthcare, justice, and autonomous mobility.  While these data-driven solutions can increase efficiency, they can also perpetuate or amplify existing inequities whenever the underlying algorithms exhibit unfair behavior.  This thesis provides a systematic investigation of algorithmic fairness, clarifying the multiple, often competing, formal definitions of fairness adopted in the literature and mapping them to the practical risks of bias and discrimination that arise throughout the machine-learning pipeline.
 
 After surveying the principal sources of bias—data imbalance, historical prejudice, model opacity, and feedback loops—the work reviews state-of-the-art mitigation strategies grouped into three families: pre-processing (data-repair and re-sampling techniques), in-processing (fairness-aware losses, constraints, and regularisers), and post-processing (prediction-adjustment and explanation tools).  Building upon these foundations, the thesis introduces \textbf{FairLib}: a modular, open-source library \emph{developed to address limitations observed in existing fairness toolkits} that unifies bias-diagnosis metrics and mitigation algorithms behind a consistent API.  FairLib is designed to be model-agnostic, seamlessly integrating with popular ML frameworks, and to facilitate reproducible experimentation through configurable pipelines.
 
@@ -81,7 +81,7 @@ machine-learning (ML) pipeline, from data collection to model
 deployment, and because technical, legal, and ethical notions of
 “fair” often conflict in practice \cite{suresh2021framework}.
 
-\section{Scope of This Report}
+\section{Scope of This Thesis}
 \subsection{Diagnose the problem}
 We survey the landscape of algorithmic unfairness, definitions of
 fairness, sources of bias (representation, measurement, aggregation,
@@ -119,7 +119,7 @@ Although the landscape now includes several fairness-oriented toolkits—such as
   Neither toolkit plugs cleanly into existing \textit{PyTorch} or
   \textit{scikit-learn} pipelines: mitigation methods are hard-wired to
   internally defined estimators that can be adjusted only through superficial
-  hyper-parameters.  A practitioner cannot, for example, inject a
+  hyperparameters.  A practitioner cannot, for example, inject a
   domain-specific neural network as the base learner for a fairness algorithm
   without rewriting large portions of the codebase.
 \end{itemize}
@@ -141,9 +141,9 @@ corresponding limitation identified above:
   All fairness metrics and evaluation utilities natively support multi-class targets and both binary and categorical sensitive attributes, while debiasing algorithms offer varying levels of support for multi-class settings together addressing key gaps in existing fairness libraries.
 
   \item \textbf{Providing end-to-end debiasing:}  
-  Harmonised \emph{pre-} and \emph{in-processing} modules let practitioners inject fairness at the point most compatible with data-governance and privacy constraints.
+  Harmonized \emph{pre-} and \emph{in-processing} modules let practitioners inject fairness at the point most compatible with data-governance and privacy constraints.
 
-  \item \textbf{Enabling customisable trade-offs and models:}  
+  \item \textbf{Enabling customizable trade-offs and models:}  
   Every mitigation algorithm surfaces its fairness penalty as a hyperparameter and accepts a user-supplied estimator, thereby supporting automatic exploration of the fairness–utility frontier without sacrificing architectural flexibility.
 
   \item \textbf{Easier integration into existing workflows:} Native PyTorch wrappers and drop-in scikit-learn compatibility make FairLib straightforward to adopt within established machine-learning pipelines, allowing the library to be applied with minimal effort.
@@ -297,7 +297,7 @@ Researchers have developed numerous approaches to address bias in AI systems, wh
 \subsection{Pre-processing techniques}
 These methods focus on transforming the input data to remove discriminatory patterns before model training. Examples include:
 \begin{itemize}
-    \item Reweighting or resampling data to balance representation across groups;
+    \item Reweighing or resampling data to balance representation across groups;
     \item Transforming features to remove correlations with protected attributes \cite{kamiran2013quantifying};
     \item Learning fair representations that preserve task-relevant information 
     while obscuring protected attributes \cite{mehrabi2021survey};
@@ -325,9 +325,9 @@ These methods adjust the output of already trained models to ensure fairness. Ex
 \subsection{Comparative Analysis of Mitigation Approaches}
 
 Each of these methods presents trade-offs. 
-\paragraph{Pre-processing} techniques offer flexibility and compatibility with any model but may not fully eliminate bias. 
-\paragraph{In-processing} techniques often yield better fairness-accuracy trade-offs but require access to model internals. 
-\paragraph{Post-processing} techniques are typically easier to implement but can be less robust \cite{mehrabi2021survey,suresh2021framework}.
+\paragraph{Pre-processing} Methods offer flexibility and compatibility with any model, though they may not completely eliminate bias.
+\paragraph{In-processing} Approaches often achieve better fairness-accuracy trade-offs, but they require access to the model’s internal components.
+\paragraph{Post-processing} Strategies tend to be easier to implement, albeit sometimes at the cost of robustness \cite{mehrabi2021survey,suresh2021framework}.
 
 The choice of mitigation strategy should be guided by practical considerations such as:
 
@@ -430,7 +430,7 @@ The formal transformation applies quantile mapping using \textbf{Cumulative Dist
     x' = (1 - \alpha)\, x + \alpha\, F^{-1}(F_{x|A}(x))
 \end{equation}
 
-where \begin{math} F_{x | A} \end{math} is the \textbf{CDF} of the feature within group A, and \begin{math}F^{-1}\end{math} is the global inverse \textbf{CDF}. The parameter \begin{math} \alpha \in [0, 1] \end{math}controls how strongly features are adjusted.
+Where \begin{math} F_{x | A} \end{math} is the \textbf{CDF} of the feature within group A, and \begin{math}F^{-1}\end{math} is the global inverse \textbf{CDF}. The parameter \begin{math} \alpha \in [0, 1] \end{math}controls how strongly features are adjusted.
 This technique reduces disparate impact by making feature distributions more similar across groups \cite{feldman2015certifyingremovingdisparateimpact}.
 
 \subsubsection{Reweighing}
@@ -447,7 +447,7 @@ Applying these weights yields a rebalanced sample in which the empirical joint d
 
 \subsection{In-processing methods} 
 An In-processing algorithm modifies the learning algorithm to incorporate fairness constraints during model training. These methods can be more effective than pre-processing, as they directly influence the model's decision-making process. Common in-processing techniques include:
-\subsubsection{FaUCI: Fairness Under Constrained Injection} Augments any stochastic-gradient–based learner with a generic penalised loss that can host any group-fairness metric (statistical parity difference, equalised odds, disparate impact, …) and works with binary, categorical, or continuous sensitive attributes.
+\subsubsection{FaUCI: Fairness Under Constrained Injection} Augments any stochastic-gradient–based learner with a generic penalized loss that can host any group-fairness metric (statistical parity difference, equalized odds, disparate impact, …) and works with binary, categorical, or continuous sensitive attributes.
 \begin{equation}
 \mathcal{L}_{h,A}(X,Y) = E\!\bigl(h(X),\, Y\bigr) \;+\; \lambda\, F_{h,A}(X,Y)
 \end{equation}
@@ -455,7 +455,7 @@ where
 \begin{itemize}
     \item \(E(h(X),Y)\) is the model’s standard error term (e.g., cross-entropy),
     \item \(F_{h,A}(X,Y)\) is the regularization term that measures the violation of the chosen fairness metric with respect to the sensitive attribute \(A\),
-    \item \(\lambda \in \mathbb{R}_{>0}\) is the hyper-parameter that balances accuracy and fairness.
+    \item \(\lambda \in \mathbb{R}_{>0}\) is the hyperparameter that balances accuracy and fairness.
 \end{itemize}
 Because $F_{h,A}(X,Y)$ is a plug-in term, the same implementation can enforce several metrics simply by swapping $F_{h,A}$~\cite{fauci-aequitas2024}.
 
@@ -468,15 +468,15 @@ Because $F_{h,A}(X,Y)$ is a plug-in term, the same implementation can enforce se
   \alpha\,\nabla_W L_A
 \end{equation}
 
-where
+Where
 \begin{itemize}
   \item $\nabla_W L_P$ is the gradient of the predictor (task) loss with respect to the model weights $W$;
   \item $\nabla_W L_A$ is the gradient of the adversary loss;
   \item $\operatorname{proj}_{\nabla_W L_A}\!\bigl(\nabla_W L_P\bigr)$ denotes the projection of $\nabla_W L_P$ onto $\nabla_W L_A$ (defined as $0$ when $\nabla_W L_A = 0$);
-  \item $\alpha$ is a tunable hyper-parameter that can vary at each training step.
+  \item $\alpha$ is a tunable hyperparameter that can vary at each training step.
 \end{itemize}
 At convergence, the predictor attains high task accuracy (low $L_P$) while remaining uninformative about the sensitive attribute $A$ (high adversary loss $L_A$) \cite{zhang2018mitigatingunwantedbiasesadversarial}.
-\subsubsection{Prejudice Remover} Make the prediction \begin{math}\widehat{Y}\end{math} statistically independent of the protected attribute by adding a mutual-information regulariser to the learner’s objective.
+\subsubsection{Prejudice Remover} Make the prediction \begin{math}\widehat{Y}\end{math} statistically independent of the protected attribute by adding a mutual-information regularizer to the learner’s objective.
 
 
 %-------------------------------------------------
@@ -488,7 +488,7 @@ At convergence, the predictor attains high task accuracy (low $L_P$) while remai
 \end{equation}
 
 \noindent
-Equation \eqref{eq:genobj} is the master template: the first term is the negative log-likelihood to be minimised for accuracy, the second is a fairness penalty weighted by~\(\eta>0\), and the third is the usual \(\ell_{2}\) weight decay controlled by~\(\lambda>0\).
+Equation \eqref{eq:genobj} is the master template: the first term is the negative log-likelihood to be minimized for accuracy, the second is a fairness penalty weighted by~\(\eta>0\), and the third is the usual \(\ell_{2}\) weight decay controlled by~\(\lambda>0\).
 
 %-------------------------------------------------
 % (8) Logistic-regression model for Pr(Y|X,S)
@@ -529,7 +529,7 @@ M[y\mid\mathbf{x}_i,s_i;\Theta]\,
 \end{equation}
 
 \noindent
-Substituting the logistic model \eqref{eq:logmodel} into the likelihood and plugging \eqref{eq:rpr} for \(R\) yields the concrete objective \eqref{eq:logobj}.  Minimising it balances three forces: data fit (first sum), fairness (middle term, scaled by~\(\eta\)), and model simplicity (last term, scaled by~\(\lambda\)).
+Substituting the logistic model \eqref{eq:logmodel} into the likelihood and plugging \eqref{eq:rpr} for \(R\) yields the concrete objective \eqref{eq:logobj}.  Minimizing it balances three forces: data fit (first sum), fairness (middle term, scaled by~\(\eta\)), and model simplicity (last term, scaled by~\(\lambda\)).
 
 The algorithm was first introduced by Kamishima \emph{et al.}; for further details, please consult the original paper~\cite{kamishima2012prejudiceremoverregularizer}.
 
@@ -553,7 +553,7 @@ Fairness is imposed by the $\tau$-rule
 \[
 \rho_q(f):=\min_{i\in[p]}q_i(f)/\max_{j\in[p]}q_j(f)\;\ge\;\tau,
 \] \cite{celis2020classificationfairnessconstraintsmetaalgorithm}.
-leading to the constrained optimization
+Leading to the constrained optimization
 \[
 \begin{aligned}
 \min_{f\in\mathcal{F}}\;&\Pr[f\neq Y]\\
@@ -613,7 +613,7 @@ Below are three classic methods, each with a short plain-language description fo
 \begin{equation}
     \Pr(\hat{Y} = 0 \mid Y = 1, A = a) = \Pr(\hat{Y} = 0 \mid Y = 1, A = a') \quad\text{(FNR equality)}
 \end{equation}
-This is often achieved by solving a linear program that adjusts predictions post hoc while minimising accuracy loss \cite{hardt2016equalityopportunitysupervisedlearning}.
+This is often achieved by solving a linear program that adjusts predictions post hoc while minimizing accuracy loss \cite{hardt2016equalityopportunitysupervisedlearning}.
 
 \subsubsection{Calibrated Equalized Odds} Adjusts predictions while maintaining calibration—that is, the predicted probability \begin{math}\hat{P}(Y=1|X)\end{math} must match the true frequency:
 \begin{equation}
@@ -621,7 +621,7 @@ This is often achieved by solving a linear program that adjusts predictions post
 \end{equation}
 It seeks a transformation of scores that retains this calibration while bringing \textbf{FPR} and \textbf{FNR} differences between groups below a small threshold \begin{math}\varepsilon\end{math}. This allows a trade-off between fairness and probabilistic interpretability of outputs \cite{NIPS2017_b8b9c74a}.
 
-\subsubsection{Reject Option Classification} Introduces a rejection option for uncertain predictions that might reflect bias. Specifically, in a band around the decision boundary (typically \begin{math} p \in [0.5 - \theta, 0.5 + \theta]) \end{math}, predictions are flipped in favour of the disadvantaged group:
+\subsubsection{Reject Option Classification} Introduces a rejection option for uncertain predictions that might reflect bias. Specifically, in a band around the decision boundary (typically \begin{math} p \in [0.5 - \theta, 0.5 + \theta]) \end{math}, predictions are flipped in favor of the disadvantaged group:
 \begin{equation}
     \widetilde{Y} =
         \begin{cases}
@@ -630,11 +630,11 @@ It seeks a transformation of scores that retains this calibration while bringing
         \text{original prediction} & \text{otherwise.}
         \end{cases}
 \end{equation}
-This improves statistical parity by reducing unfair decisions near the boundary where the model is least confident \cite{6413831}.
+This improves statistical parity by reducing unfair decisions near the boundary where the model is the least confident \cite{6413831}.
 
 \section{Fairness Toolkits and Libraries Overview}
-IBM’s \textit{AI Fairness 360} (AIF360) and Microsoft’s \textit{Fairlearn} are two prominent open-source toolkits designed to operationalise fairness techniques in machine learning. Both provide extensive libraries of fairness metrics and bias-mitigation algorithms: AIF360 offers several detection metrics and nine pre-, in-, and post-processing mitigations \cite{bellamy2019aif360}, whereas Fairlearn complements a dashboard for diagnostic visualisation with reduction- and post-processing-based mitigations for both classification and regression \cite{bird2020fairlearn}. Despite this breadth, recent empirical studies reveal substantial usability barriers \cite{deng2022exploring}. 
-Further hurdles arise from API and documentation design: inconsistent terminology (e.g., \texttt{CorrelationRemover} in Fairlearn versus \texttt{DisparateImpactRemover} in AIF360) and limited explanatory material oblige many users to copy code from toy examples rather than adapt algorithms systematically \cite{deng2022exploring}. Finally, the libraries’ research-centric architecture complicates integration into production pipelines, especially where access to protected attributes is constrained by privacy or compliance requirements \cite{holstein2019}. In short, while AIF360 and Fairlearn lower the entry barrier to technical fairness assessments, their current incarnations remain far from “plug-and-play.” Addressing gaps in task coverage, guidance, and workflow integration is therefore essential if such tools are to fulfil their promise in real-world machine-learning practice.
+IBM’s \textit{AI Fairness 360} (AIF360) and Microsoft’s \textit{Fairlearn} are two prominent open-source toolkits designed to operationalize fairness techniques in machine learning. Both provide extensive libraries of fairness metrics and bias-mitigation algorithms: AIF360 offers several detection metrics and nine pre-, in-, and post-processing mitigations \cite{bellamy2019aif360}, whereas Fairlearn complements a dashboard for diagnostic visualization with reduction- and post-processing-based mitigations for both classification and regression \cite{bird2020fairlearn}. Despite this breadth, recent empirical studies reveal substantial usability barriers \cite{deng2022exploring}. 
+Further, hurdles arise from API and documentation design: inconsistent terminology (e.g., \texttt{CorrelationRemover} in Fairlearn versus \texttt{DisparateImpactRemover} in AIF360) and limited explanatory material oblige many users to copy code from toy examples rather than adapt algorithms systematically \cite{deng2022exploring}. Finally, the libraries’ research-centric architecture complicates integration into production pipelines, especially where access to protected attributes is constrained by privacy or compliance requirements \cite{holstein2019}. In short, while AIF360 and Fairlearn lower the entry barrier to technical fairness assessments, their current incarnations remain far from “plug-and-play.” Addressing gaps in task coverage, guidance, and workflow integration is therefore essential if such tools are to fulfil their promise in real-world machine-learning practice.
 
 \section{Challenges in Fairness Implementation}
 In operationalizing algorithmic fairness, practitioners face multiple interrelated challenges. \textbf{First}, numerous formal definitions of fairness exist (e.g., demographic parity, equalized odds), and many of these criteria conflict or cannot be satisfied simultaneously \cite{kusner2017counterfactual,xian2024unified}. This forces stakeholders to decide which definition best aligns with their context and values. \textbf{Second}, pursuing fairness often involves trade-offs with model accuracy or other performance measures, since fairness constraints can degrade predictive accuracy \cite{corbettdavies2017}. \textbf{Third}, bias in data presents a major obstacle: historical datasets may reflect societal prejudices, and models can inadvertently use proxy features correlated with protected attributes, leading to residual unfairness even after interventions \cite{barocas2016}. \textbf{Fourth}, fairness solutions must be tailored to each domain’s legal and social context; for example, anti-discrimination laws in some sectors restrict the use of sensitive attributes and mandate specific fairness criteria, necessitating domain-specific approaches \cite{veale2017}. \textbf{Finally}, even when technical solutions are available, deploying them in real-world systems is difficult. Open-source fairness toolkits (e.g., AI Fairness 360 \cite{bellamy2019aif360}) provide many metrics and mitigation algorithms, but practitioners often struggle with their usability and integration into existing workflows \cite{holstein2019,lee2021}. These challenges highlight that achieving fairness in practice requires not only better algorithms, but also careful attention to context, data quality, and human-centered tool design.
@@ -669,7 +669,7 @@ The \textbf{in-processing module} provides model training algorithms that incorp
 
 \subsection{Framework Integration Layer}
 
-The integration layer provides native support for popular machine learning ecosystems, ensuring that FairLib can be adopted within existing workflows without requiring fundamental architectural changes. PyTorch integration allows deep learning models to be wrapped and enhanced with fairness capabilities while preserving their original interfaces, enabling researchers to apply fairness techniques to complex neural architectures. Scikit-learn compatibility ensures that standard fit/predict/transform patterns enable drop-in replacement within existing ML pipelines, reducing the barrier to adoption.
+The integration layer provides native support for popular machine learning ecosystems, ensuring that FairLib can be adopted within existing workflows without requiring fundamental architectural changes. PyTorch's integration allows deep learning models to be wrapped and enhanced with fairness capabilities while preserving their original interfaces, enabling researchers to apply fairness techniques to complex neural architectures. Scikit-learn compatibility ensures that standard fit/predict/transform patterns enable drop-in replacement within existing ML pipelines, reducing the barrier to adoption.
 
 \subsection{Consistency and Interoperability}
 
@@ -687,12 +687,12 @@ Fairness assessments and mitigation strategies depend critically on two orthogon
 \subsection{Design choice} Although defining a new subclass of \texttt{DataFrame} might appear to be a clean and modular solution, it proves to be impractical in real-world scenarios. Many widely used libraries, such as \texttt{scikit-learn}, perform internal operations that downcast custom subclasses to the base \texttt{DataFrame}, thereby stripping away any additional functionality or metadata. To preserve compatibility while extending functionality, the approach adopted here relies on \emph{monkey patching}~\cite{carattino2019monkey}: descriptors are attached at runtime to the global \texttt{pandas.DataFrame} class, allowing the enriched interface to coexist seamlessly with existing tooling.
 
 \begin{enumerate}[label=\alph*)]
-  \item \textbf{Metadata descriptors.} The attributes \texttt{targets} and \texttt{sensitive} are implemented as descriptors that read from and write to keys in \texttt{df.attrs}. Because \texttt{attrs} is serialised by pandas I/O backends, the annotations persist across copies, slices, concatenations, and round-trip storage.
+  \item \textbf{Metadata descriptors.} The attributes \texttt{targets} and \texttt{sensitive} are implemented as descriptors that read from and write to keys in \texttt{df.attrs}. Because \texttt{attrs} is serialized by pandas I/O backends, the annotations persist across copies, slices, concatenations, and round-trip storage.
   \item \textbf{Utility transforms.} Methods such as \texttt{unpack()} are provided to operate on the data while preserving and propagating the associated metadata, even when structural changes occur in the underlying columns.
   \item \textbf{Metric facades.} Parameterless methods such as \texttt{disparate\_impact()} and \texttt{statistical\_parity\_difference()} automatically retrieve $y$ and $S$ from the stored descriptors and delegate the computation to standard routines defined in \texttt{metrics}.
 \end{enumerate}
 
-\subsection{Implementation} Each descriptor is implemented as a specialised \texttt{property} that manipulates \texttt{df.attrs}. Metric wrappers include validation logic and invoke the appropriate computational backend using the metadata declared on the frame. A summary diagram can be read in Figure \ref{fig:df-uml}.
+\subsection{Implementation} Each descriptor is implemented as a specialized \texttt{property} that manipulates \texttt{df.attrs}. Metric wrappers include validation logic and invoke the appropriate computational backend using the metadata declared on the frame. A summary diagram can be read in Figure \ref{fig:df-uml}.
 
 \begin{figure}
 \centering
@@ -716,7 +716,7 @@ A particularly novel aspect of the design is the extension mechanism, which allo
 \label{fig:metrics-uml}
 \end{figure}
 
-The inherent multi-dimensionality of fairness evaluation outcomes necessitated the introduction of dedicated data structures. In particular, the \texttt{DomainDict} class provides a semantically rich mapping layer that supports flexible querying across sensitive attributes, prediction targets, and their value combinations. This enables domain-aware operations such as selective retrieval by attribute names, partial assignments, or intersectional groupings, which are essential for nuanced fairness analyzes across diverse population strata.
+The inherent multidimensionality of fairness evaluation outcomes necessitated the introduction of dedicated data structures. In particular, the \texttt{DomainDict} class provides a semantically rich mapping layer that supports flexible querying across sensitive attributes, prediction targets, and their value combinations. This enables domain-aware operations such as selective retrieval by attribute names, partial assignments, or intersectional groupings, which are essential for nuanced fairness analyzes across diverse population strata.
 
 Robust input validation and exception handling are implemented as first-class concerns within the library. The \texttt{check\_and\_setup} utility performs comprehensive precondition checks to ensure the dimensional alignment of sensitive attributes and outcome variables, issuing informative warnings in edge cases such as low group cardinality or missing categories. Furthermore, boundary conditions—such as metrics computed on empty demographic groups—are gracefully handled using \texttt{NaN} or infinite values, preserving the semantic consistency of results while avoiding runtime interruptions.
 
@@ -785,7 +785,7 @@ w \;=\; \frac{n_{\text{outcome}} \times n_{\text{group}}}{\,n_{\text{total}} \ti
 where $n_{\text{outcome}}$ is the total number of instances with the specified outcome (favorable or unfavorable) in the entire dataset, $n_{\text{group}}$ is the number of instances in the given demographic group (privileged or unprivileged), $n_{\text{total}}$ is the total number of instances in the dataset, and $n_{\text{joint}}$ is the number of instances that belong to both that group and that outcome category. The implementation also includes a specialized variant called \texttt{ReweighingWithMean}. This variant handles cases with multiple sensitive attributes by computing weights for each attribute independently and then averaging them, providing a more nuanced approach for intersectional fairness scenarios. The final transformed DataFrame includes a new \texttt{weights} column that can be directly used with scikit-learn classifiers via the \texttt{sample\_weight} parameter during training.
 
 \subsection{Learning Fair Representations}
-The Learning Fair Representations (LFR) algorithm is implemented as a deep neural network consisting of three interconnected components—an encoder, a decoder, and a classifier—constructed with PyTorch. The encoder network transforms the input features into a lower-dimensional “fair” representation, \textit{as illustrated in} Figure~\ref{fig:lfr_architecture}, using a three-layer fully connected architecture (input $\rightarrow$ 64 $\rightarrow$ 32 $\rightarrow$ latent\_dim) with ReLU activations; this 64–32 configuration is simply the library’s default and can be replaced by defining custom \texttt{Encoder}, \texttt{Decoder}, and \texttt{Classifier} modules that respect the required layer dimensions, making the entire LFR pipeline fully customisable. The decoder then attempts to reconstruct the original feature space from this representation using the symmetric architecture (latent\_dim $\rightarrow$ 32 $\rightarrow$ 64 $\rightarrow$ output\_dim), which can likewise be adapted to alternative depths or widths. 
+The Learning Fair Representations (LFR) algorithm is implemented as a deep neural network consisting of three interconnected components—an encoder, a decoder, and a classifier—constructed with PyTorch. The encoder network transforms the input features into a lower-dimensional “fair” representation, \textit{as illustrated in} Figure~\ref{fig:lfr_architecture}, using a three-layer fully connected architecture (input $\rightarrow$ 64 $\rightarrow$ 32 $\rightarrow$ latent\_dim) with ReLU activations; this 64–32 configuration is simply the library’s default and can be replaced by defining custom \texttt{Encoder}, \texttt{Decoder}, and \texttt{Classifier} modules that respect the required layer dimensions, making the entire LFR pipeline fully customizable. The decoder then attempts to reconstruct the original feature space from this representation using the symmetric architecture (latent\_dim $\rightarrow$ 32 $\rightarrow$ 64 $\rightarrow$ output\_dim), which can likewise be adapted to alternative depths or widths. 
 
 \begin{figure}
 \centering
@@ -813,7 +813,7 @@ x_{\text{repaired}} \;=\; (1 - \lambda)\,x_{\text{original}} \;+\; \lambda\,x_{\
 \] 
 Here $\lambda$ is the repair level parameter that controls the trade-off between fairness and data fidelity.
 
-This approach makes the marginal distributions of each feature much more similar across different demographic groups, thereby reducing disparate impact, while still preserving some of the original data characteristics. The repair level $\lambda$ allows practitioners to balance between achieving complete distributional fairness ($\lambda = 1$, using only the median-aligned value) and preserving the original feature values ($\lambda = 0$, no adjustment). Additionally, the implementation preserves metadata consistency by keeping the same column names and retaining sensitive attribute information in the transformed DataFrame.
+This approach makes the marginal distributions of each feature much more similar across different demographic groups, thereby reducing disparate impact, while still preserving some original data characteristics. The repair level $\lambda$ allows practitioners to balance between achieving complete distributional fairness ($\lambda = 1$, using only the median-aligned value) and preserving the original feature values ($\lambda = 0$, no adjustment). Additionally, the implementation preserves metadata consistency by keeping the same column names and retaining sensitive attribute information in the transformed DataFrame.
 
 \section{In-Processing Algorithms}
 The in-processing module of FairLib implements advanced fairness-aware machine learning algorithms by integrating fairness constraints directly into model training. This approach enables the simultaneous optimization of predictive accuracy and fairness objectives, allowing practitioners to achieve better trade-offs between these often competing goals. The implementation follows a modular design pattern, and all algorithms inherit from a common \texttt{Processor} base class that defines standard \texttt{fit()} and \texttt{predict()} methods. This abstraction ensures a consistent interface across different fairness algorithms and compatibility with FairLib’s DataFrame-based data handling system, making it easy to interchange in-processing mitigation methods within the library. A summary diagram can be read in Figure \ref{fig:inprocessing-uml}.
@@ -865,7 +865,7 @@ which corresponds to summing over the four possible $(y, s)$ combinations in the
 \chapter{Evaluation and Results}
 
 
-This chapter presents an empirical evaluation of the proposed Python library for algorithmic fairness. We analyze its behaviour along four complementary axes: \emph{verbosity of the API}, \emph{ease of use}, \emph{seamless integration within existing machine--learning pipelines}, and \emph{quantitative impact on fairness metrics}. The goal is to provide a comprehensive view of the trade--offs introduced by the library and to validate its practical utility.
+This chapter presents an empirical evaluation of the proposed Python library for algorithmic fairness. We analyze its behavior along four complementary axes: \emph{verbosity of the API}, \emph{ease of use}, \emph{seamless integration within existing machine--learning pipelines}, and \emph{quantitative impact on fairness metrics}. The goal is to provide a comprehensive view of the trade--offs introduced by the library and to validate its practical utility.
 
 
 \section{Verbosity Analysis}
@@ -944,7 +944,7 @@ For \textbf{in-processing algorithms}, the evaluation protocol consists of:
 \subsection{Results Summary}
 A concise presentation of key numerical results, focusing on disparity measures (e.g., Statistical Parity Difference, Disparate Impact) and accuracy.
 \subsubsection{Pre-processing Algorithms Results}
-The results of applying pre-processing algorithms to the Adult Income dataset are summarised in 3 figures. Figure \ref{fig:baseline_results} shows the accuracy of the baseline model and the models trained after applying pre-processing algorithms. The accuracy is computed on the test set of the Adult Income dataset.
+The results of applying pre-processing algorithms to the Adult Income dataset are summarized in 3 figures. Figure \ref{fig:baseline_results} shows the accuracy of the baseline model and the models trained after applying pre-processing algorithms. The accuracy is computed on the test set of the Adult Income dataset.
 Figure \ref{fig:preprocessing_results} shows the Statistical Parity Difference (SPD) for the baseline model and the models trained after applying pre-processing algorithms. The SPD is computed on the test set of the Adult Income dataset. Figure \ref{fig:preprocessing_results_di} shows the Disparate Impact (DI) for the baseline model and the models trained after applying pre-processing algorithms. The DI is computed on the test set of the Adult Income dataset.
 
 \begin{figure}
@@ -972,7 +972,7 @@ From the results obtained by applying the algorithms in the pre-processing modul
 
 \subsubsection{In-processing Algorithms Results}
 
-The results of applying in-processing algorithms to the Adult Income dataset are summarised in 3 figures. Figure \ref{fig:baseline_results_inprocessing} shows the accuracy of the baseline model and the models trained after applying in-processing algorithms. The accuracy is computed on the test set of the Adult Income dataset.
+The results of applying in-processing algorithms to the Adult Income dataset are summarized in 3 figures. Figure \ref{fig:baseline_results_inprocessing} shows the accuracy of the baseline model and the models trained after applying in-processing algorithms. The accuracy is computed on the test set of the Adult Income dataset.
 Figure \ref{fig:inprocessing_results} shows the Statistical Parity Difference (SPD) for the baseline model and the models trained after applying in-processing algorithms. The SPD is computed on the test set of the Adult Income dataset. Figure \ref{fig:inprocessing_results_di} shows the Disparate Impact (DI) for the baseline model and the models trained after applying in-processing algorithms. The DI is computed on the test set of the Adult Income dataset.
 
 \begin{figure}

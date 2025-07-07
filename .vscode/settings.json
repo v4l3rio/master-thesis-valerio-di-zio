@@ -1,0 +1,11 @@
+{
+  "ltex.enabled": true,
+  "ltex.language": "en-US",       // o "it" per italiano
+  "ltex.documentTypes": ["latex"],
+  "ltex.tex.commands": [
+    "cite", "ref", "label", "eqref", "textit", "textbf", "emph", "url"
+  ],
+  "ltex.ignoreEnvironments": [
+    "equation", "align", "tikzpicture", "lstlisting", "verbatim"
+  ]
+}
