@@ -93,7 +93,7 @@ three key stages of the ML lifecycle:
 \emph{post-processing} (output adjustment).
 
 \subsection{A practical solution}
-In this study we present \textbf{FairLib}, a modular Python library that consolidates a broad spectrum of fairness metrics and bias-mitigation algorithms within a single, production-oriented interface. By elevating bias detection, remediation, and continuous auditing to integral components of the machine-learning development lifecycle, FairLib significantly reduces the practical barriers to deploying equitable intelligent systems.
+In this study, we present \textbf{FairLib}, a modular Python library that consolidates a broad spectrum of fairness metrics and bias-mitigation algorithms within a single, production-oriented interface. By elevating bias detection, remediation, and continuous auditing to integral components of the machine-learning development lifecycle, FairLib significantly reduces the practical barriers to deploying equitable intelligent systems.
 
 \section{Motivation for FairLib}
 Although the landscape now includes several fairness-oriented toolkits—such as Themis-ML, Fairness Indicators, and Google’s What-If Tool—this study focuses on IBM’s \textit{AI Fairness 360} (AIF360) \cite{bellamy2019aif360} and Microsoft’s \textit{Fairlearn} \cite{bird2020fairlearn}. These two libraries are among the most widely used and technically mature open-source solutions, offering extensive metric suites and diverse bias-mitigation algorithms. Precisely because of their popularity, richness, and maturity, they serve as realistic benchmarks for day-to-day engineering; yet, as we show below, they still suffer from four persistent shortcomings that motivate the development of \textbf{FairLib}.
@@ -630,7 +630,7 @@ It seeks a transformation of scores that retains this calibration while bringing
         \text{original prediction} & \text{otherwise.}
         \end{cases}
 \end{equation}
-This improves statistical parity by reducing unfair decisions near the boundary where the model is the least confident \cite{6413831}.
+This improves statistical parity by reducing unfair decisions near the boundary where the model is least confident \cite{6413831}.
 
 \section{Fairness Toolkits and Libraries Overview}
 IBM’s \textit{AI Fairness 360} (AIF360) and Microsoft’s \textit{Fairlearn} are two prominent open-source toolkits designed to operationalize fairness techniques in machine learning. Both provide extensive libraries of fairness metrics and bias-mitigation algorithms: AIF360 offers several detection metrics and nine pre-, in-, and post-processing mitigations \cite{bellamy2019aif360}, whereas Fairlearn complements a dashboard for diagnostic visualization with reduction- and post-processing-based mitigations for both classification and regression \cite{bird2020fairlearn}. Despite this breadth, recent empirical studies reveal substantial usability barriers \cite{deng2022exploring}. 
@@ -682,7 +682,7 @@ This section describes the core implementation details of the FairLib library's 
 
 \section{Metadata--Enriched DataFrame}
 
-Fairness assessments and mitigation strategies depend critically on two orthogonal pieces of information: (i) the decision variable $y$ (\emph{target}) and (ii) one or more protected or sensitive attributes $S$. In conventional pipelines, these identifiers are typically passed as arguments to each function invocation, a practice that is both verbose and error-prone. To streamline this process, metadata is embedded directly into the standard \texttt{pandas.DataFrame}.
+Fairness assessments and mitigation strategies depend critically on two orthogonal pieces of information: (i) the decision variable $y$ (\emph{target}) and (ii) one or more protected or sensitive attributes $S$. In conventional pipelines, these identifiers are typically passed as arguments to each function invocation, a practice that is both verbose and error-prone. To streamline this process, metadata are embedded directly into the standard \texttt{pandas.DataFrame}.
 
 \subsection{Design choice} Although defining a new subclass of \texttt{DataFrame} might appear to be a clean and modular solution, it proves to be impractical in real-world scenarios. Many widely used libraries, such as \texttt{scikit-learn}, perform internal operations that downcast custom subclasses to the base \texttt{DataFrame}, thereby stripping away any additional functionality or metadata. To preserve compatibility while extending functionality, the approach adopted here relies on \emph{monkey patching}~\cite{carattino2019monkey}: descriptors are attached at runtime to the global \texttt{pandas.DataFrame} class, allowing the enriched interface to coexist seamlessly with existing tooling.
 
