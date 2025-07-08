@@ -40,7 +40,7 @@ fauci_model = fl.Fauci(
             )
         ),
     loss=nn.CrossEntropyLoss(),
-    fairness_regularization="spd", # or "di" or others supported by _torch_metrics.get
+    fairness_regularization="spd", # or "di" or others supported by _torch_metrics
     regularization_weight=0.5, # Example weight, adjust as needed
 )
 
